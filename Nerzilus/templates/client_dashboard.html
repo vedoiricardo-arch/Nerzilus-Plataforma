@@ -114,6 +114,11 @@
                       <strong>Indisponivel</strong>
                       <span>Horario bloqueado pela barbearia</span>
                     </div>
+                  {% elif not row.is_working %}
+                    <div class="agenda-cell booking-slot-card is-unavailable">
+                      <strong>Indisponivel</strong>
+                      <span>Fora do horario de atendimento</span>
+                    </div>
                   {% elif row.is_continuation %}
                     <div class="agenda-cell booking-slot-card is-unavailable">
                       <strong>Indisponivel</strong>

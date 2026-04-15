@@ -38,6 +38,14 @@ THEME_CHOICES = [
     ("pink", "Pink mode"),
 ]
 
+SLOT_INTERVAL_CHOICES = [
+    (15, "15 min"),
+    (20, "20 min"),
+    (30, "30 min"),
+    (45, "45 min"),
+    (60, "60 min"),
+]
+
 class ClientAccessForm(FlaskForm):
     nome = StringField("Nome", validators=[DataRequired(), Length(min=2, max=120)])
     telefone = TelField("Telefone", validators=[DataRequired(), Length(min=8, max=20)])
@@ -96,6 +104,7 @@ class PlatformSignupForm(FlaskForm):
 class BarberForm(FlaskForm):
     nome = StringField("Nome", validators=[DataRequired(), Length(min=2, max=120)])
     especialidade = StringField("Especialidade", validators=[DataRequired(), Length(min=2, max=120)])
+    slot_interval_minutes = SelectField("Intervalo da agenda", coerce=int, choices=SLOT_INTERVAL_CHOICES, validators=[DataRequired()])
     botao_confirmacao = SubmitField("Salvar")
 
 
@@ -107,8 +116,8 @@ class ServiceForm(FlaskForm):
     botao_confirmacao = SubmitField("Salvar")
 
     def validate_duracao_minutos(self, field):
-        if field.data % AGENDA_SLOT_MINUTES != 0:
-            raise ValidationError(f"A duracao deve ser em multiplos de {AGENDA_SLOT_MINUTES} minutos.")
+        if field.data % 5 != 0:
+            raise ValidationError("A duracao deve ser em multiplos de 5 minutos.")
 
 
 class AppointmentForm(FlaskForm):
@@ -134,6 +143,13 @@ class SlotAvailabilityForm(FlaskForm):
     data_referencia = HiddenField(validators=[DataRequired()])
     hora_referencia = HiddenField(validators=[DataRequired()])
     botao_confirmacao = SubmitField("Atualizar")
+
+
+class BarberWorkingSlotForm(FlaskForm):
+    barbeiro_id = HiddenField(validators=[DataRequired()])
+    weekday = HiddenField(validators=[DataRequired()])
+    hora_referencia = HiddenField(validators=[DataRequired()])
+    botao_confirmacao = SubmitField("Atualizar horario")
 
 
 class TenantWhatsAppForm(FlaskForm):

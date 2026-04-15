@@ -244,7 +244,7 @@ class AppRoutesTestCase(unittest.TestCase):
                     "barbeiro_id": barbeiro.id,
                     "servico_id": servico.id,
                     "data_agendamento": "2026-04-15",
-                    "hora_agendamento": "14:30",
+                    "hora_agendamento": "14:45",
                 },
                 follow_redirects=True,
             )
@@ -371,6 +371,110 @@ class AppRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertIn(b"bloqueado pela barbearia", tentativa.data.lower())
+
+    def test_admin_can_edit_working_hours_by_slot(self):
+        self.client.post(
+            "/t/nerzilus-studio/admin/login",
+            data={"username": "sergioadmin", "senha": "admin123"},
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus.models import Barber, Service
+
+            barber = Barber.query.filter_by(nome="Barbeiro Modelo").first()
+            service = Service.query.filter_by(nome="Acabamento").first()
+
+        resposta = self.client.post(
+            "/t/nerzilus-studio/admin/agenda/horarios",
+            data={
+                "barbeiro_id": barber.id,
+                "weekday": 3,
+                "hora_referencia": "14:00",
+                "botao_confirmacao": True,
+            },
+            follow_redirects=True,
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn("Horario de atendimento removido".encode("utf-8"), resposta.data)
+
+        self.client.get("/logout", follow_redirects=True)
+        self.client.post(
+            "/t/nerzilus-studio/cliente",
+            data={"nome": "Cliente Horario", "telefone": "11911112222"},
+            follow_redirects=True,
+        )
+        visualizacao = self.client.get(
+            f"/t/nerzilus-studio/cliente/dashboard?barbeiro_id={barber.id}&data_agendamento=2026-04-16",
+            follow_redirects=True,
+        )
+        self.assertIn("Fora do horario de atendimento".encode("utf-8"), visualizacao.data)
+
+        tentativa = self.client.post(
+            "/t/nerzilus-studio/cliente/dashboard",
+            data={
+                "barbeiro_id": barber.id,
+                "servico_id": service.id,
+                "data_agendamento": "2026-04-16",
+                "hora_agendamento": "14:00",
+            },
+            follow_redirects=True,
+        )
+        self.assertIn(b"fora do atendimento configurado pelo admin", tentativa.data.lower())
+
+    def test_admin_can_change_barber_slot_interval(self):
+        self.client.post(
+            "/t/nerzilus-studio/admin/login",
+            data={"username": "sergioadmin", "senha": "admin123"},
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus.models import Barber
+
+            barber = Barber.query.filter_by(nome="Barbeiro Modelo").first()
+
+        resposta = self.client.post(
+            f"/t/nerzilus-studio/admin/barbeiros/{barber.id}/editar",
+            data={
+                "nome": barber.nome,
+                "especialidade": barber.especialidade,
+                "slot_interval_minutes": 30,
+                "botao_confirmacao": True,
+            },
+            follow_redirects=True,
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn("nova grade de horarios".encode("utf-8"), resposta.data)
+        self.assertIn("slots de 30 minutos".encode("utf-8"), resposta.data)
+
+        self.client.get("/logout", follow_redirects=True)
+        self.client.post(
+            "/t/nerzilus-studio/cliente",
+            data={"nome": "Cliente Intervalo", "telefone": "11922223333"},
+            follow_redirects=True,
+        )
+        visualizacao = self.client.get(
+            f"/t/nerzilus-studio/cliente/dashboard?barbeiro_id={barber.id}&data_agendamento=2026-04-16",
+            follow_redirects=True,
+        )
+        self.assertIn(b"14:30", visualizacao.data)
+        self.assertNotIn(b"14:45", visualizacao.data)
+
+        self.client.get("/logout", follow_redirects=True)
+        self.client.post(
+            "/t/nerzilus-studio/admin/login",
+            data={"username": "sergioadmin", "senha": "admin123"},
+            follow_redirects=True,
+        )
+        agenda_admin = self.client.get(
+            f"/t/nerzilus-studio/admin?barbeiro_id={barber.id}&day=2026-04-16",
+            follow_redirects=True,
+        )
+        self.assertIn(b"14:30", agenda_admin.data)
+        self.assertNotIn(b"14:45", agenda_admin.data)
 
     def test_admin_can_update_whatsapp_and_client_sees_link(self):
         self.client.post(

@@ -768,6 +768,85 @@ h2.section-title {
   color: var(--muted);
 }
 
+.working-hours-board {
+  display: grid;
+  gap: 12px;
+}
+
+.working-hours-section {
+  padding: 10px;
+}
+
+.working-hours-table {
+  display: grid;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.working-hours-head,
+.working-hours-row {
+  display: grid;
+  grid-template-columns: 58px repeat(7, minmax(52px, 1fr));
+  gap: 6px;
+  min-width: 470px;
+}
+
+.working-hours-time-label,
+.working-hours-day-label,
+.working-hours-time {
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  padding: 8px 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.working-hours-time-label,
+.working-hours-day-label {
+  color: var(--accent);
+  background: rgba(216, 171, 79, 0.08);
+  border: 1px solid rgba(216, 171, 79, 0.18);
+}
+
+.working-hours-time {
+  color: var(--text);
+  background: var(--surface-soft);
+  border: 1px solid var(--white-line);
+}
+
+.working-slot-form {
+  margin: 0;
+}
+
+.working-slot-button {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--white-line);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.working-slot-button:hover {
+  transform: translateY(-1px);
+}
+
+.working-slot-button.is-enabled {
+  color: #20160a;
+  background: linear-gradient(180deg, rgba(216, 171, 79, 0.95), rgba(216, 171, 79, 0.82));
+  border-color: rgba(216, 171, 79, 0.55);
+}
+
+.working-slot-button.is-disabled {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.02);
+  border-style: dashed;
+}
+
 .admin-hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
@@ -1271,6 +1350,26 @@ h2.section-title {
     min-width: 0;
     padding: 10px;
     gap: 8px;
+  }
+
+  .working-hours-head,
+  .working-hours-row {
+    grid-template-columns: 52px repeat(7, minmax(48px, 1fr));
+    gap: 4px;
+    min-width: 420px;
+  }
+
+  .working-hours-time-label,
+  .working-hours-day-label,
+  .working-hours-time {
+    padding: 6px 2px;
+    font-size: 0.7rem;
+  }
+
+  .working-slot-button {
+    min-height: 34px;
+    font-size: 0.68rem;
+    border-radius: 8px;
   }
 
   .agenda-week-card {
