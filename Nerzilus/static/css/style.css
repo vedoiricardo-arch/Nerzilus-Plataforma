@@ -1,0 +1,1516 @@
+:root {
+  --bg: #060606;
+  --panel: rgba(16, 16, 16, 0.92);
+  --soft: #111111;
+  --soft-2: #171512;
+  --text: #f8f4eb;
+  --muted: #b6a891;
+  --accent: #d8ab4f;
+  --accent-strong: #f0c56a;
+  --accent-soft: rgba(216, 171, 79, 0.14);
+  --danger: #c85f50;
+  --line: rgba(216, 171, 79, 0.18);
+  --white-line: rgba(255, 255, 255, 0.06);
+  --bg-top: #090909;
+  --bg-bottom: #050505;
+  --stripe-a: rgba(216, 171, 79, 0.08);
+  --stripe-b: rgba(216, 171, 79, 0.05);
+  --input-bg: rgba(12, 12, 12, 0.96);
+  --input-placeholder: rgba(248, 244, 235, 0.48);
+  --secondary-bg: rgba(20, 18, 15, 0.92);
+  --secondary-text: var(--text);
+  --surface-strong: rgba(12, 12, 12, 0.9);
+  --surface-soft: rgba(255, 255, 255, 0.02);
+  --surface-panel: rgba(5, 5, 5, 0.46);
+  --hero-stage: #0b0b0b;
+  --hero-image-backdrop: #101010;
+  --button-primary-text: #1a1610;
+  --success-text: #9be2ac;
+  --success-bg: rgba(93, 164, 116, 0.14);
+  --danger-text: #ffb0a3;
+  --danger-bg: rgba(200, 95, 80, 0.14);
+}
+
+:root[data-theme="light"] {
+  --bg: #f4efe7;
+  --panel: rgba(255, 251, 245, 0.97);
+  --soft: #f6f0e7;
+  --soft-2: #ece3d5;
+  --text: #1d1812;
+  --muted: #756552;
+  --accent: #bb8a2a;
+  --accent-strong: #d6a447;
+  --accent-soft: rgba(187, 138, 42, 0.12);
+  --danger: #b55a4f;
+  --line: rgba(187, 138, 42, 0.22);
+  --white-line: rgba(29, 24, 18, 0.08);
+  --bg-top: #f8f4ed;
+  --bg-bottom: #ece3d7;
+  --stripe-a: rgba(187, 138, 42, 0.05);
+  --stripe-b: rgba(187, 138, 42, 0.025);
+  --input-bg: rgba(255, 250, 244, 0.98);
+  --input-placeholder: rgba(117, 101, 82, 0.72);
+  --secondary-bg: rgba(251, 245, 237, 0.98);
+  --secondary-text: #1d1812;
+  --surface-strong: rgba(255, 249, 241, 0.97);
+  --surface-soft: rgba(120, 95, 58, 0.035);
+  --surface-panel: rgba(255, 250, 244, 0.88);
+  --hero-stage: #ffffff;
+  --hero-image-backdrop: #ffffff;
+  --button-primary-text: #1d1812;
+  --success-text: #23633a;
+  --success-bg: rgba(93, 164, 116, 0.16);
+  --danger-text: #8b352c;
+  --danger-bg: rgba(181, 90, 79, 0.14);
+}
+
+:root[data-theme="pink"] {
+  --bg: #fff1f5;
+  --panel: rgba(255, 249, 252, 0.97);
+  --soft: #fff6f9;
+  --soft-2: #f4dde6;
+  --text: #351826;
+  --muted: #7d5b69;
+  --accent: #bc5d82;
+  --accent-strong: #d9789d;
+  --accent-soft: rgba(188, 93, 130, 0.11);
+  --danger: #b94f5d;
+  --line: rgba(188, 93, 130, 0.22);
+  --white-line: rgba(53, 24, 38, 0.08);
+  --bg-top: #fff5f8;
+  --bg-bottom: #f3e2e9;
+  --stripe-a: rgba(188, 93, 130, 0.045);
+  --stripe-b: rgba(188, 93, 130, 0.025);
+  --input-bg: rgba(255, 249, 251, 0.985);
+  --input-placeholder: rgba(125, 91, 105, 0.74);
+  --secondary-bg: rgba(254, 243, 248, 0.98);
+  --secondary-text: #351826;
+  --surface-strong: rgba(255, 248, 251, 0.97);
+  --surface-soft: rgba(97, 45, 67, 0.032);
+  --surface-panel: rgba(255, 248, 251, 0.9);
+  --hero-stage: #ffe8f0;
+  --hero-image-backdrop: #ffd7e5;
+  --button-primary-text: #2a1020;
+  --success-text: #21603b;
+  --success-bg: rgba(93, 164, 116, 0.14);
+  --danger-text: #8f3144;
+  --danger-bg: rgba(185, 79, 93, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    linear-gradient(115deg, transparent 0 47%, var(--stripe-a) 47.4%, transparent 48.2%),
+    linear-gradient(245deg, transparent 0 53%, var(--stripe-b) 53.4%, transparent 54.2%),
+    linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+  color: var(--text);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-shell {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.panel,
+.mini-card,
+.list-item,
+.landing-frame {
+  background: var(--panel);
+  border: 1px solid var(--white-line);
+  border-radius: 28px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+}
+
+.panel,
+.landing-frame {
+  padding: 24px;
+}
+
+.landing-shell {
+  min-height: calc(100vh - 88px);
+  display: block;
+}
+
+.landing-frame {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #ffffff 2%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, transparent), transparent 35%),
+    var(--panel);
+}
+
+.landing-lines {
+  position: absolute;
+  left: 50%;
+  width: min(980px, 120%);
+  height: 220px;
+  transform: translateX(-50%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.landing-lines::before,
+.landing-lines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+}
+
+.landing-lines::before {
+  background-image:
+    linear-gradient(90deg, transparent 0, rgba(216, 171, 79, 0.22) 18%, transparent 36%),
+    linear-gradient(90deg, transparent 0, rgba(216, 171, 79, 0.18) 52%, transparent 70%),
+    linear-gradient(90deg, transparent 0, rgba(216, 171, 79, 0.14) 84%, transparent 100%);
+  background-size: 100% 1px, 100% 1px, 100% 1px;
+  background-position: center 28%, center 52%, center 76%;
+}
+
+.landing-lines::after {
+  background-image:
+    linear-gradient(120deg, transparent 0 46%, rgba(216, 171, 79, 0.18) 46.5%, transparent 47%),
+    linear-gradient(60deg, transparent 0 52%, rgba(216, 171, 79, 0.14) 52.5%, transparent 53%);
+}
+
+.landing-lines-top {
+  top: -32px;
+}
+
+.landing-lines-bottom {
+  bottom: -48px;
+  transform: translateX(-50%) rotate(180deg);
+}
+
+.landing-hero {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 0 10px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 8px;
+  align-content: start;
+}
+
+.landing-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.bee-logo {
+  position: relative;
+  width: 92px;
+  height: 84px;
+  flex: 0 0 auto;
+}
+
+.bee-hex {
+  position: absolute;
+  width: 26px;
+  height: 30px;
+  clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%);
+  background: linear-gradient(180deg, rgba(216, 171, 79, 0.28), rgba(216, 171, 79, 0.08));
+  border: 1px solid rgba(216, 171, 79, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.bee-hex-core {
+  left: 33px;
+  top: 27px;
+  background: linear-gradient(180deg, rgba(240, 197, 106, 0.9), rgba(216, 171, 79, 0.34));
+  box-shadow: 0 0 28px rgba(216, 171, 79, 0.18);
+}
+
+.bee-hex-center {
+  left: 33px;
+  top: 0;
+}
+
+.bee-hex-top-left {
+  left: 10px;
+  top: 13px;
+}
+
+.bee-hex-top-right {
+  right: 10px;
+  top: 13px;
+}
+
+.bee-hex-bottom-left {
+  left: 10px;
+  bottom: 11px;
+}
+
+.bee-hex-bottom-right {
+  right: 10px;
+  bottom: 11px;
+}
+
+.eyebrow {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.76rem;
+}
+
+h1 {
+  font-size: 2rem;
+  line-height: 1.02;
+}
+
+h2.section-title {
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+
+.landing-title {
+  font-size: clamp(3.2rem, 10vw, 6.2rem);
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+  margin-top: 0;
+}
+
+.subtitle,
+.muted,
+.list-item span,
+.landing-copy {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.landing-copy {
+  max-width: 36ch;
+  font-size: 0.98rem;
+  text-transform: none;
+  letter-spacing: 0.08em;
+}
+
+.landing-actions,
+.card-section,
+.form-stack,
+.flash-stack,
+.list-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.landing-actions {
+  position: relative;
+  z-index: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+.landing-actions-single {
+  grid-template-columns: minmax(0, 560px);
+  justify-content: center;
+}
+
+.landing-panel {
+  background:
+    linear-gradient(180deg, rgba(216, 171, 79, 0.04), transparent 60%),
+    rgba(14, 14, 14, 0.92);
+}
+
+.landing-login-panel {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.landing-create-toggle {
+  margin-top: 16px;
+}
+
+.card-section {
+  margin-top: 16px;
+}
+
+.mini-card {
+  padding: 16px 18px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, transparent), var(--panel));
+}
+
+.mini-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-bottom: 6px;
+}
+
+.button,
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button-primary {
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent));
+  color: var(--button-primary-text);
+}
+
+.button-secondary {
+  background: var(--secondary-bg);
+  color: var(--secondary-text);
+  border: 1px solid var(--line);
+}
+
+.button-danger {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: 1px solid color-mix(in srgb, var(--danger) 34%, transparent);
+}
+
+.slim-button,
+.link-button {
+  min-height: 40px;
+  padding: 10px 14px;
+}
+
+.compact-top {
+  margin-top: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.input {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.submit-button {
+  width: 100%;
+}
+
+.grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.top-row,
+.inline-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.compact-panel {
+  margin-top: 14px;
+}
+
+.list-item {
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 3.5%, transparent), var(--panel));
+}
+
+.barber-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(216, 171, 79, 0.14);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.service-grid,
+.payment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.payment-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.service-card,
+.payment-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  cursor: pointer;
+}
+
+.service-card input,
+.payment-card input {
+  display: none;
+}
+
+.service-card:has(input:checked),
+.payment-card:has(input:checked) {
+  border-color: rgba(216, 171, 79, 0.7);
+  background: rgba(216, 171, 79, 0.12);
+}
+
+.service-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(216, 171, 79, 0.15);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.status-chip {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  text-transform: capitalize;
+  background: var(--soft);
+}
+
+.status-confirmado {
+  color: #99e3a5;
+}
+
+.status-pendente {
+  color: #f1c980;
+}
+
+.status-cancelado {
+  color: #ffb0a3;
+}
+
+.status-concluido {
+  color: #d7d7d7;
+}
+
+.texto-erro {
+  color: #ffad97;
+  font-size: 0.82rem;
+}
+
+.flash {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+}
+
+.flash-success {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.flash-error {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.admin-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 320px;
+  background: var(--hero-stage);
+  border-color: var(--line);
+}
+
+.admin-hero-photo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--hero-image-backdrop);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: none;
+}
+
+.admin-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(8, 8, 8, 0.72) 0%, rgba(8, 8, 8, 0.48) 38%, rgba(8, 8, 8, 0.08) 72%, rgba(8, 8, 8, 0.02) 100%);
+  pointer-events: none;
+}
+
+.admin-hero-content {
+  position: relative;
+  z-index: 1;
+  color: #fffaf2;
+}
+
+.admin-hero-stack {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.admin-brand-title {
+  font-size: clamp(2rem, 6vw, 4rem);
+  letter-spacing: 0.08em;
+  line-height: 0.94;
+  text-transform: uppercase;
+  max-width: 10ch;
+}
+
+.agenda-filter {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.agenda-layout {
+  display: grid;
+  gap: 16px;
+}
+
+.agenda-block {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  display: grid;
+  gap: 14px;
+}
+
+.agenda-block-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.agenda-day-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.agenda-day-section {
+  display: grid;
+  gap: 10px;
+  border-radius: 18px;
+  border: 1px solid var(--white-line);
+  background: var(--surface-soft);
+  padding: 12px;
+}
+
+.agenda-section-title {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.76rem;
+}
+
+.agenda-day-grid {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 8px 12px;
+}
+
+.agenda-time {
+  color: var(--accent);
+  font-weight: 700;
+  padding-top: 10px;
+  font-size: 0.92rem;
+}
+
+.agenda-cell {
+  min-height: 62px;
+  border-radius: 16px;
+  border: 1px solid var(--white-line);
+  background: var(--surface-soft);
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.agenda-cell strong,
+.agenda-week-card strong,
+.booking-slot-card strong {
+  font-size: 0.92rem;
+}
+
+.agenda-cell span,
+.agenda-week-card span,
+.booking-slot-card span {
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.agenda-cell.has-appointment,
+.agenda-week-cell.has-appointment {
+  background: rgba(216, 171, 79, 0.14);
+  border-color: rgba(216, 171, 79, 0.4);
+}
+
+.agenda-cell.is-blocked {
+  background: rgba(200, 95, 80, 0.12);
+  border-color: rgba(200, 95, 80, 0.28);
+}
+
+.agenda-cell.is-continuation,
+.agenda-week-cell.is-continuation {
+  opacity: 0.72;
+}
+
+.agenda-actions {
+  margin-top: 4px;
+}
+
+.agenda-filter {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  align-items: end;
+  gap: 8px 10px;
+}
+
+.agenda-filter label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.agenda-week-columns {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(140px, 1fr));
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.agenda-week-day {
+  min-width: 140px;
+  border-radius: 18px;
+  border: 1px solid var(--white-line);
+  background: var(--surface-soft);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.agenda-week-day-head {
+  display: grid;
+  gap: 2px;
+  color: var(--accent);
+}
+
+.agenda-week-day-list {
+  display: grid;
+  gap: 8px;
+}
+
+.agenda-week-card {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(216, 171, 79, 0.12);
+  border: 1px solid rgba(216, 171, 79, 0.25);
+}
+
+.agenda-week-empty {
+  min-height: 62px;
+  border-radius: 14px;
+  border: 1px dashed var(--white-line);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.admin-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 16px;
+  align-items: stretch;
+  position: relative;
+  z-index: 1;
+  min-height: 256px;
+}
+
+.admin-contact-card {
+  border-radius: 20px;
+  border: 1px solid var(--white-line);
+  background: var(--surface-panel);
+  padding: 16px;
+  align-self: end;
+  backdrop-filter: blur(6px);
+}
+
+.admin-hero-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contact-link-button {
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+}
+
+.admin-theme-form {
+  display: block;
+}
+
+.theme-icon-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-panel) 92%, transparent);
+  border: 1px solid var(--white-line);
+  backdrop-filter: blur(8px);
+}
+
+.theme-icon-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--white-line);
+  background: color-mix(in srgb, var(--surface-panel) 88%, transparent);
+  cursor: pointer;
+}
+
+.theme-icon-button input {
+  display: none;
+}
+
+.theme-icon-button span {
+  font-size: 1rem;
+  color: var(--text);
+  line-height: 1;
+}
+
+.theme-icon-button:has(input:checked) {
+  border-color: color-mix(in srgb, var(--accent) 56%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 100%, transparent);
+}
+
+.upload-icon-button {
+  overflow: hidden;
+}
+
+.upload-icon-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.admin-whatsapp-form {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-whatsapp-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-whatsapp-input {
+  min-height: 48px;
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  box-shadow: inset 0 0 0 1px var(--surface-soft);
+}
+
+.admin-whatsapp-input:focus {
+  outline: none;
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.admin-whatsapp-help {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.admin-whatsapp-card {
+  margin-top: auto;
+  justify-self: end;
+  width: min(100%, 360px);
+}
+
+.admin-whatsapp-details {
+  width: 100%;
+}
+
+.admin-whatsapp-details[open] {
+  padding-top: 4px;
+}
+
+.admin-whatsapp-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.admin-whatsapp-summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-whatsapp-summary-text {
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.admin-whatsapp-details:not([open]) .admin-whatsapp-form {
+  display: none;
+}
+
+.admin-whatsapp-details[open] .admin-whatsapp-form {
+  margin-top: 12px;
+}
+
+.admin-whatsapp-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.whatsapp-icon {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #25d366;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(37, 211, 102, 0.28);
+}
+
+.whatsapp-icon svg {
+  width: 68%;
+  height: 68%;
+  display: block;
+}
+
+.client-top-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.booking-shell {
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 12%, transparent), transparent 22%),
+    var(--panel);
+}
+
+.booking-wizard {
+  display: grid;
+  gap: 18px;
+}
+
+.booking-inline {
+  display: grid;
+  gap: 18px;
+}
+
+.booking-admin-alert {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, #25d366 30%, transparent);
+  background: rgba(37, 211, 102, 0.1);
+}
+
+.booking-admin-alert strong {
+  color: var(--text);
+}
+
+.booking-admin-alert .button {
+  width: fit-content;
+}
+
+.booking-section {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  display: grid;
+  gap: 14px;
+}
+
+.booking-section-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.booking-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.booking-summary-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  display: grid;
+  gap: 6px;
+}
+
+.booking-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.booking-step-card {
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 5%, transparent), transparent 100%),
+    var(--surface-strong);
+  color: var(--text);
+  text-align: left;
+  display: grid;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.booking-step-card.is-active {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 100%),
+    var(--surface-strong);
+}
+
+.booking-step-card span {
+  color: var(--muted);
+}
+
+.booking-step-index {
+  color: var(--accent) !important;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+}
+
+.booking-hidden-inputs,
+.booking-hidden-field {
+  display: none;
+}
+
+.booking-barber-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.booking-option-card.is-active,
+.booking-option-card:has(input:checked) {
+  border-color: rgba(216, 171, 79, 0.78);
+  background: rgba(216, 171, 79, 0.14);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.booking-slot-sections {
+  margin-top: 4px;
+}
+
+.booking-slot-card {
+  cursor: pointer;
+  min-height: 52px;
+  padding: 8px 10px;
+  gap: 2px;
+}
+
+.booking-slot-card strong {
+  font-size: 0.88rem;
+}
+
+.booking-slot-card {
+  position: relative;
+}
+
+.booking-slot-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.booking-slot-card.is-unavailable {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+@media (min-width: 700px) {
+  .app-shell {
+    padding-top: 28px;
+  }
+
+  .panel,
+  .landing-frame {
+    padding: 32px;
+    border-radius: 30px;
+  }
+
+  .list-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 699px) {
+  .landing-actions,
+  .list-stack,
+  .grid-two,
+  .service-grid,
+  .payment-grid,
+  .booking-overview,
+  .booking-actions-grid,
+  .booking-barber-grid,
+  .agenda-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-hero-grid {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .admin-contact-card {
+    width: 100%;
+  }
+
+  .admin-hero-toolbar {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    justify-content: flex-end;
+  }
+
+  .admin-hero {
+    min-height: 400px;
+    padding-top: 64px;
+  }
+
+  .admin-hero::after {
+    background: linear-gradient(180deg, rgba(8, 8, 8, 0.42) 0%, rgba(8, 8, 8, 0.62) 55%, rgba(8, 8, 8, 0.72) 100%);
+  }
+
+  .admin-brand-title {
+    max-width: none;
+    font-size: clamp(1.8rem, 10vw, 3.4rem);
+  }
+
+  .admin-hero-content {
+    padding-top: 8px;
+  }
+
+  .admin-whatsapp-card {
+    justify-self: stretch;
+    width: auto;
+    padding: 8px 10px;
+    background: color-mix(in srgb, var(--surface-panel) 82%, transparent);
+  }
+
+  .admin-whatsapp-summary-text {
+    display: none;
+  }
+
+  .admin-whatsapp-details[open] .admin-whatsapp-form {
+    margin-top: 10px;
+  }
+
+  .admin-whatsapp-summary {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .admin-whatsapp-inline {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-whatsapp-input,
+  .admin-whatsapp-inline .button {
+    width: 100%;
+  }
+
+  .client-top-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .client-top-actions .link-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .booking-shell > .top-row {
+    gap: 14px;
+  }
+
+  .booking-shell > .top-row h1 {
+    font-size: 1.55rem;
+    line-height: 1;
+  }
+
+  .booking-shell > .top-row .subtitle {
+    font-size: 0.86rem;
+  }
+
+  .agenda-day-grid {
+    grid-template-columns: 54px 1fr;
+    gap: 6px 8px;
+  }
+
+  .agenda-day-sections {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .agenda-day-section {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .agenda-time {
+    padding-top: 8px;
+    font-size: 0.78rem;
+  }
+
+  .agenda-cell {
+    min-height: 48px;
+    padding: 8px 9px;
+    border-radius: 12px;
+    gap: 2px;
+  }
+
+  .agenda-cell strong,
+  .agenda-week-card strong,
+  .booking-slot-card strong {
+    font-size: 0.82rem;
+  }
+
+  .agenda-cell span,
+  .agenda-week-card span,
+  .booking-slot-card span {
+    font-size: 0.72rem;
+  }
+
+  .agenda-week-columns {
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+  }
+
+  .agenda-week-day {
+    min-width: 0;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .agenda-week-card {
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .agenda-filter {
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .agenda-filter .button {
+    width: 100%;
+  }
+
+  .landing-shell {
+    min-height: auto;
+  }
+
+  .landing-title {
+    font-size: 2.1rem;
+  }
+
+  .landing-brand-row {
+    gap: 10px;
+    align-items: center;
+  }
+
+  .bee-logo {
+    width: 74px;
+    height: 68px;
+  }
+
+  .landing-copy {
+    font-size: 0.9rem;
+  }
+
+  .landing-frame {
+    padding-top: 20px;
+  }
+
+  .theme-icon-group {
+    padding: 4px;
+    gap: 6px;
+    max-width: fit-content;
+  }
+
+  .theme-icon-button {
+    width: 34px;
+    height: 34px;
+  }
+
+  .theme-icon-button span {
+    font-size: 0.9rem;
+  }
+
+  .whatsapp-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .admin-hero-stack {
+    gap: 10px;
+  }
+
+  .admin-hero-stack .button,
+  .admin-hero-stack .link-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .top-row {
+    align-items: flex-start;
+  }
+
+  .agenda-block {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .booking-shell {
+    padding: 16px;
+  }
+
+  .booking-admin-alert {
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+
+  .booking-admin-alert .button {
+    width: 100%;
+  }
+
+  .booking-section {
+    padding: 14px;
+    border-radius: 18px;
+    gap: 10px;
+  }
+
+  .booking-section-head {
+    gap: 10px;
+    flex-direction: row;
+  }
+
+  .booking-step-index {
+    font-size: 0.72rem;
+    min-width: 28px;
+  }
+
+  .service-card,
+  .payment-card,
+  .list-item.booking-option-card {
+    padding: 12px 10px;
+    border-radius: 14px;
+  }
+
+  .service-card strong,
+  .list-item.booking-option-card strong {
+    font-size: 0.9rem;
+  }
+
+  .service-card span,
+  .list-item.booking-option-card span {
+    font-size: 0.76rem;
+    line-height: 1.35;
+  }
+
+  .barber-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    font-size: 0.92rem;
+  }
+
+  .service-grid,
+  .booking-barber-grid {
+    gap: 10px;
+  }
+
+  .booking-slot-sections {
+    gap: 8px;
+  }
+
+  .booking-slot-card {
+    min-height: 50px;
+    padding: 9px 10px;
+    border-radius: 12px;
+  }
+
+  .booking-slot-card strong {
+    font-size: 0.8rem;
+  }
+
+  .booking-slot-card span {
+    font-size: 0.7rem;
+  }
+
+  .booking-slot-card::after {
+    content: "";
+    position: absolute;
+    inset: auto 10px 8px auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 70%, #ffffff 30%);
+    opacity: 0.9;
+  }
+
+.booking-slot-card.is-unavailable::after {
+    background: rgba(255, 255, 255, 0.22);
+  }
+}
+
+.billing-hero {
+  display: grid;
+  gap: 14px;
+}
+
+.billing-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.billing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.billing-plan-card {
+  display: grid;
+  gap: 14px;
+}
+
+.billing-plan-card.is-featured {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28), 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.billing-price {
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 0.92;
+  color: var(--text);
+}
+
+.billing-feature-list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.billing-feature-list li {
+  padding-left: 18px;
+  position: relative;
+}
+
+.billing-feature-list li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  position: absolute;
+  left: 0;
+  top: 10px;
+}
+
+.billing-note-card {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 699px) {
+  .billing-summary-strip,
+  .billing-grid {
+    grid-template-columns: 1fr;
+  }
+}

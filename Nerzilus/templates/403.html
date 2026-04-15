@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="panel">
+    <p class="eyebrow">403</p>
+    <h1>Acesso negado</h1>
+    <a href="{{ url_for('main.homepage') }}" class="button button-primary compact-top">Voltar</a>
+  </section>
+{% endblock %}

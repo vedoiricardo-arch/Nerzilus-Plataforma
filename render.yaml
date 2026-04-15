@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: nerzilusbee
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:application --workers 2 --threads 4 --timeout 120
+    healthCheckPath: /healthz
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nerzilusbee-db
+          property: connectionString
+      - key: APP_BASE_URL
+        value: https://nerzilusbee.onrender.com
+      - key: FORCE_HTTPS
+        value: "true"
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: ASAAS_API_KEY
+        sync: false
+      - key: ASAAS_ENVIRONMENT
+        value: sandbox
+      - key: ASAAS_WEBHOOK_TOKEN
+        sync: false
+      - key: ASAAS_PIX_KEY
+        value: "51993338005"
+      - key: PLAN_ACCESS_LIBERADO_MONTHLY_AMOUNT
+        value: "99.00"
+      - key: PLAN_ACCESS_LIBERADO_YEARLY_AMOUNT
+        value: "990.00"
+      - key: ADMIN_EMAIL
+        sync: false
+
+databases:
+  - name: nerzilusbee-db
+    plan: starter

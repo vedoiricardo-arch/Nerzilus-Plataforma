@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Cliente | {{ tenant.nome }}{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <p class="eyebrow">Cliente</p>
+    <h1>{{ tenant.nome }}</h1>
+    <p class="subtitle">Informe nome e telefone para acessar a agenda deste tenant.</p>
+
+    <form method="POST" class="form-stack compact-top">
+      {{ form.csrf_token }}
+      <div class="field">
+        {{ form.nome.label }}
+        {{ form.nome(class="input", placeholder="Seu nome") }}
+        {% for erro in form.nome.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.telefone.label }}
+        {{ form.telefone(class="input", placeholder="Seu telefone") }}
+        {% for erro in form.telefone.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+      </div>
+      {{ form.botao_confirmacao(class="button button-primary submit-button") }}
+    </form>
+  </section>
+{% endblock %}

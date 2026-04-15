@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Nerzilus{% endblock %}
+
+{% block content %}
+  <section class="landing-shell">
+    <div class="landing-frame">
+      <div class="landing-lines landing-lines-top" aria-hidden="true"></div>
+      <div class="landing-lines landing-lines-bottom" aria-hidden="true"></div>
+
+      <section class="landing-hero">
+        <h1 class="landing-title">Nerzilus</h1>
+        <p class="landing-copy">Plataforma de gestao de agenda e clientes</p>
+      </section>
+
+      <section class="landing-actions landing-actions-single">
+        <div class="panel landing-panel landing-login-panel">
+                    <h2 class="section-title">ACESSO AO MEU NEGÓCIO</h2>
+
+          <form method="POST" class="form-stack compact-top">
+            {{ login_form.csrf_token }}
+            <div class="field">
+              {{ login_form.username.label }}
+              {{ login_form.username(class="input", placeholder="username") }}
+              {% for erro in login_form.username.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+            </div>
+            <div class="field">
+              {{ login_form.senha.label }}
+              {{ login_form.senha(class="input", placeholder="senha") }}
+              {% for erro in login_form.senha.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+            </div>
+            {{ login_form.botao_confirmacao(class="button button-secondary submit-button") }}
+          </form>
+
+          <div class="landing-create-toggle">
+            <a href="{{ url_for('main.homepage', criar_conta=1) }}#criar-conta" class="button button-primary submit-button">Criar conta</a>
+          </div>
+        </div>
+
+        {% if show_signup %}
+          <div class="panel landing-panel" id="criar-conta">
+            <p class="eyebrow">Criar conta</p>
+            <h2 class="section-title">Trazer minha barbearia para a Nerzilus</h2>
+            <p class="subtitle">Preencha os dados da barbearia e crie o acesso administrativo.</p>
+
+            <form method="POST" class="form-stack compact-top">
+              {{ signup_form.csrf_token }}
+              <div class="field">
+                {{ signup_form.nome_barbearia.label }}
+                {{ signup_form.nome_barbearia(class="input", placeholder="Nome da sua barbearia") }}
+                {% for erro in signup_form.nome_barbearia.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+              </div>
+              <div class="field">
+                {{ signup_form.slug.label }}
+                {{ signup_form.slug(class="input", placeholder="minha-barbearia") }}
+                {% for erro in signup_form.slug.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+              </div>
+              <div class="grid-two">
+                <div class="field">
+                  {{ signup_form.email.label }}
+                  {{ signup_form.email(class="input", placeholder="admin@barbearia.com") }}
+                  {% for erro in signup_form.email.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+                </div>
+                <div class="field">
+                  {{ signup_form.username.label }}
+                  {{ signup_form.username(class="input", placeholder="admin") }}
+                  {% for erro in signup_form.username.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+                </div>
+              </div>
+              <div class="grid-two">
+                <div class="field">
+                  {{ signup_form.senha.label }}
+                  {{ signup_form.senha(class="input", placeholder="Senha segura") }}
+                  {% for erro in signup_form.senha.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+                </div>
+              </div>
+              <div class="field">
+                {{ signup_form.whatsapp.label }}
+                {{ signup_form.whatsapp(class="input", placeholder="11999999999") }}
+                {% for erro in signup_form.whatsapp.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+              </div>
+              <div class="field">
+                {{ signup_form.cpf_cnpj.label }}
+                {{ signup_form.cpf_cnpj(class="input", placeholder="Somente numeros") }}
+                {% for erro in signup_form.cpf_cnpj.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+              </div>
+              {{ signup_form.botao_confirmacao(class="button button-primary submit-button") }}
+            </form>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Planos | {{ tenant.nome }}{% endblock %}
+
+{% block content %}
+  <section class="panel billing-hero">
+    <p class="eyebrow">Assinatura SaaS</p>
+    <h1 class="section-title">Assine com Asaas</h1>
+    <p class="subtitle">A ativacao continua vindo do webhook. O admin pode fechar a tela e o status sera sincronizado assim que o pagamento for confirmado.</p>
+    <div class="billing-summary-strip">
+      <div class="mini-card">
+        <span class="mini-label">Plano atual</span>
+        <strong>{{ subscription.plan|replace('_', ' ')|title if subscription else 'Nenhum plano' }}</strong>
+      </div>
+      <div class="mini-card">
+        <span class="mini-label">Status</span>
+        <strong>{{ subscription.status|upper if subscription else 'INATIVO' }}</strong>
+      </div>
+      <div class="mini-card">
+        <span class="mini-label">Trial</span>
+        <strong>{% if subscription and subscription.trial_end %}{{ subscription.trial_end.strftime('%d/%m/%Y') }}{% else %}Sem trial{% endif %}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="billing-grid">
+    {% for interval, option in plan_catalog.items() %}
+      <article class="panel billing-plan-card{% if interval == 'monthly' %} is-featured{% endif %}">
+        <p class="eyebrow">{{ 'Mensal' if interval == 'monthly' else 'Anual' }}</p>
+        <h2 class="section-title">{{ option.name }}</h2>
+        <p class="billing-price">R$ {{ '%.2f'|format(option.amount_brl)|replace('.', ',') }}</p>
+        <p class="subtitle">{{ option.description }}</p>
+        <ul class="billing-feature-list">
+          <li>Acesso completo ao ambiente multi-tenant</li>
+          <li>Agenda, clientes, barbeiros e servicos</li>
+          <li>7 dias de trial antes da primeira cobranca</li>
+          <li>Webhook Asaas como fonte de verdade</li>
+        </ul>
+
+        <div class="form-stack compact-top">
+          <form method="POST" action="{{ url_for('main.create_checkout_session_route') }}" class="form-stack">
+            {{ checkout_forms[(interval, 'PIX')].hidden_tag() }}
+            {{ checkout_forms[(interval, 'PIX')].billing_interval(value=interval) }}
+            {{ checkout_forms[(interval, 'PIX')].billing_method(value='PIX') }}
+            {{ checkout_forms[(interval, 'PIX')].botao_confirmacao(class="button button-primary submit-button", value="Assinar com Pix") }}
+          </form>
+          <form method="POST" action="{{ url_for('main.create_checkout_session_route') }}" class="form-stack">
+            {{ checkout_forms[(interval, 'CREDIT_CARD')].hidden_tag() }}
+            {{ checkout_forms[(interval, 'CREDIT_CARD')].billing_interval(value=interval) }}
+            {{ checkout_forms[(interval, 'CREDIT_CARD')].billing_method(value='CREDIT_CARD') }}
+            {{ checkout_forms[(interval, 'CREDIT_CARD')].botao_confirmacao(class="button button-secondary submit-button", value="Assinar com cartao") }}
+          </form>
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="panel compact-panel billing-note-card">
+    <p class="eyebrow">Pix recorrente</p>
+    <h2 class="section-title">Fluxo com Asaas</h2>
+    <p class="subtitle">O Pix recorrente passa pelo Asaas e nao por cobranca direta na chave. A chave de recebimento deve estar configurada na conta do gateway para o repasse correto.</p>
+    <p class="subtitle">Chave informada para recebimento: <strong>51993338005</strong>.</p>
+    {% if not current_user.cpf_cnpj %}
+      <p class="subtitle">Antes de assinar, salve o CPF ou CNPJ do responsavel para o Asaas conseguir criar a cobranca.</p>
+      <form method="POST" action="{{ url_for('main.billing_customer') }}" class="form-stack compact-top">
+        {{ customer_form.hidden_tag() }}
+        <div class="field">
+          {{ customer_form.cpf_cnpj.label }}
+          {{ customer_form.cpf_cnpj(class="input-field", placeholder="Somente numeros") }}
+          {% for erro in customer_form.cpf_cnpj.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+        </div>
+        {{ customer_form.botao_confirmacao(class="button button-secondary submit-button") }}
+      </form>
+    {% endif %}
+    {% if not asaas_is_configured %}
+      <p class="subtitle">Configure <strong>ASAAS_API_KEY</strong> e <strong>ASAAS_WEBHOOK_TOKEN</strong> antes de publicar.</p>
+    {% endif %}
+  </section>
+{% endblock %}

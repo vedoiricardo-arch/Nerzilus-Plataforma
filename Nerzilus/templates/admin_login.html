@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Admin | {{ tenant.nome }}{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <p class="eyebrow">Administrador</p>
+    <h1>{{ tenant.nome }}</h1>
+    <p class="subtitle">Use username e senha do administrador deste tenant.</p>
+
+    <form method="POST" class="form-stack compact-top">
+      {{ form.csrf_token }}
+      <div class="field">
+        {{ form.username.label }}
+        {{ form.username(class="input", placeholder="Username") }}
+        {% for erro in form.username.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.senha.label }}
+        {{ form.senha(class="input", placeholder="Senha") }}
+        {% for erro in form.senha.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+      </div>
+      {{ form.botao_confirmacao(class="button button-primary submit-button") }}
+    </form>
+  </section>
+{% endblock %}

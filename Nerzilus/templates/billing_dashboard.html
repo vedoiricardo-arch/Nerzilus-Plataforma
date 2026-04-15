@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Assinatura | {{ tenant.nome }}{% endblock %}
+
+{% block content %}
+  <section class="panel billing-hero">
+    <p class="eyebrow">Billing</p>
+    <h1 class="section-title">Painel de assinatura</h1>
+    <p class="subtitle">Todo status vem do webhook do Asaas. O painel mostra plano, vencimento, link de cobranca e os dados do Pix quando houver.</p>
+    <div class="billing-summary-strip">
+      <div class="mini-card">
+        <span class="mini-label">Plano</span>
+        <strong>{{ subscription.plan|replace('_', ' ')|title if subscription else 'Nenhum plano' }}</strong>
+      </div>
+      <div class="mini-card">
+        <span class="mini-label">Status</span>
+        <strong>{{ subscription.status|upper if subscription else 'INATIVO' }}</strong>
+      </div>
+      <div class="mini-card">
+        <span class="mini-label">Proxima cobranca</span>
+        <strong>{% if subscription and subscription.next_due_date %}{{ subscription.next_due_date.strftime('%d/%m/%Y') }}{% else %}-{% endif %}</strong>
+      </div>
+      <div class="mini-card">
+        <span class="mini-label">Metodo</span>
+        <strong>{% if subscription and subscription.billing_method %}{{ 'Pix' if subscription.billing_method == 'PIX' else 'Cartao' }}{% else %}-{% endif %}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="billing-grid">
+    <article class="panel compact-panel">
+      <p class="eyebrow">Gerenciamento</p>
+      <h2 class="section-title">Assinar ou trocar ciclo</h2>
+      <p class="subtitle">O checkout cria a recorrencia no Asaas. Para Pix, o admin recebe o link e o copia e cola da cobranca atual.</p>
+
+      <div class="form-stack compact-top">
+        {% for interval, option in plan_catalog.items() %}
+          <div class="list-item">
+            <strong>{{ option.name }} {{ 'Mensal' if interval == 'monthly' else 'Anual' }}</strong>
+            <span>R$ {{ '%.2f'|format(option.amount_brl)|replace('.', ',') }}</span>
+            <form method="POST" action="{{ url_for('main.create_checkout_session_route') }}" class="form-stack">
+              {{ checkout_forms[(interval, 'PIX')].hidden_tag() }}
+              {{ checkout_forms[(interval, 'PIX')].billing_interval(value=interval) }}
+              {{ checkout_forms[(interval, 'PIX')].billing_method(value='PIX') }}
+              {{ checkout_forms[(interval, 'PIX')].botao_confirmacao(class="button button-primary", value="Pix") }}
+            </form>
+            <form method="POST" action="{{ url_for('main.create_checkout_session_route') }}" class="form-stack">
+              {{ checkout_forms[(interval, 'CREDIT_CARD')].hidden_tag() }}
+              {{ checkout_forms[(interval, 'CREDIT_CARD')].billing_interval(value=interval) }}
+              {{ checkout_forms[(interval, 'CREDIT_CARD')].billing_method(value='CREDIT_CARD') }}
+              {{ checkout_forms[(interval, 'CREDIT_CARD')].botao_confirmacao(class="button button-secondary", value="Cartao") }}
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="panel compact-panel">
+      <p class="eyebrow">Cobranca atual</p>
+      <h2 class="section-title">Dados do pagamento</h2>
+      <p class="subtitle">Use estas informacoes para concluir a cobranca atual e acompanhar a recorrencia.</p>
+      {% if not current_user.cpf_cnpj %}
+        <p class="subtitle">O Asaas exige CPF ou CNPJ do responsavel para criar a cobranca.</p>
+        <form method="POST" action="{{ url_for('main.billing_customer') }}" class="form-stack compact-top">
+          {{ customer_form.hidden_tag() }}
+          <div class="field">
+            {{ customer_form.cpf_cnpj.label }}
+            {{ customer_form.cpf_cnpj(class="input-field", placeholder="Somente numeros") }}
+            {% for erro in customer_form.cpf_cnpj.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+          </div>
+          {{ customer_form.botao_confirmacao(class="button button-secondary submit-button") }}
+        </form>
+      {% else %}
+        <p class="subtitle">Documento do responsavel salvo: <strong>{{ current_user.cpf_cnpj }}</strong></p>
+      {% endif %}
+      {% if subscription and subscription.last_invoice_url %}
+        <a href="{{ subscription.last_invoice_url }}" class="button button-secondary" target="_blank" rel="noopener">Abrir link de cobranca</a>
+      {% endif %}
+      {% if subscription and subscription.pix_copy_paste %}
+        <label class="field-label compact-top">Pix copia e cola</label>
+        <textarea class="input-field" rows="5" readonly>{{ subscription.pix_copy_paste }}</textarea>
+      {% endif %}
+      {% if subscription and subscription.cancel_at_period_end %}
+        <p class="subtitle">Cancelamento ja solicitado para o proximo ciclo.</p>
+      {% else %}
+        <form method="POST" action="{{ url_for('main.billing_cancel') }}" class="form-stack compact-top">
+          {{ cancel_form.hidden_tag() }}
+          {{ cancel_form.botao_confirmacao(class="button button-ghost submit-button") }}
+        </form>
+      {% endif %}
+      <a href="{{ url_for('main.admin_dashboard', tenant_slug=tenant.slug) }}" class="link-button">Voltar para o painel adm</a>
+    </article>
+  </section>
+{% endblock %}

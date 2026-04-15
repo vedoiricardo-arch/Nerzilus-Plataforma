@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Admin | {{ tenant.nome }}{% endblock %}
+
+{% block content %}
+  <section class="admin-hero panel">
+    <div class="admin-hero-photo" style="background-image:url('{{ hero_image_url }}');" aria-hidden="true"></div>
+
+    <div class="admin-hero-toolbar">
+      <form method="POST" action="{{ url_for('main.atualizar_tema_tenant', tenant_slug=tenant.slug) }}" class="admin-theme-form">
+        {{ tenant_theme_form.hidden_tag() }}
+        <div class="theme-icon-group" aria-label="Tema da plataforma">
+          {% for value, label in tenant_theme_form.tema.choices %}
+            <label class="theme-icon-button" title="{{ label }}">
+              <input type="radio" name="{{ tenant_theme_form.tema.name }}" value="{{ value }}" {% if tenant_theme_form.tema.data == value %}checked{% endif %} onchange="this.form.submit()" />
+              <span aria-hidden="true">{% if value == "dark" %}&#9790;{% elif value == "light" %}&#9728;{% else %}&#10047;{% endif %}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </form>
+
+      <form method="POST" action="{{ url_for('main.atualizar_imagem_cabecalho', tenant_slug=tenant.slug) }}" class="admin-upload-form" enctype="multipart/form-data">
+        <label class="theme-icon-button upload-icon-button" title="Trocar imagem do cabecalho">
+          <input id="hero-image" type="file" name="hero_image" accept=".jpg,.jpeg,.png,.webp" onchange="this.form.submit()" />
+          <span aria-hidden="true">&#8682;</span>
+        </label>
+      </form>
+    </div>
+
+    <div class="admin-hero-grid">
+      <div class="admin-hero-content admin-hero-stack">
+                    <p class="eyebrow">PAINEL ADM</p>
+        <h1 class="admin-brand-title">{{ tenant.nome.upper() }}</h1>
+        <a href="{{ client_booking_url }}" class="button button-primary">Link de agendamento do cliente</a>
+        <a href="{{ url_for('main.billing_dashboard') }}" class="button button-secondary">Assinatura SaaS</a>
+        <a href="{{ url_for('main.logout') }}" class="link-button">Sair</a>
+      </div>
+
+      <aside class="admin-contact-card admin-whatsapp-card">
+        <details class="admin-whatsapp-details">
+          <summary class="admin-whatsapp-summary">
+            <span class="whatsapp-icon" aria-hidden="true">
+              <svg viewBox="0 0 32 32" focusable="false">
+                <path fill="currentColor" d="M19.11 17.34c-.27-.14-1.58-.78-1.82-.87-.24-.09-.41-.14-.58.14-.17.27-.67.87-.82 1.05-.15.18-.31.2-.58.07-.27-.14-1.15-.42-2.19-1.35-.81-.72-1.36-1.6-1.52-1.87-.16-.27-.02-.42.12-.56.13-.13.27-.31.41-.47.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.47-.07-.14-.58-1.41-.8-1.94-.21-.5-.43-.43-.58-.44h-.5c-.18 0-.47.07-.72.34-.25.27-.95.93-.95 2.28s.97 2.66 1.11 2.85c.14.18 1.91 2.91 4.63 4.08.65.28 1.16.45 1.56.57.66.21 1.27.18 1.75.11.53-.08 1.58-.65 1.8-1.28.22-.63.22-1.17.15-1.28-.07-.11-.24-.18-.51-.31Z"/>
+                <path fill="currentColor" d="M16.01 4.8c-6.17 0-11.19 5.02-11.19 11.19 0 1.97.52 3.9 1.49 5.59L4.73 27.2l5.77-1.51a11.14 11.14 0 0 0 5.51 1.45h.01c6.17 0 11.19-5.02 11.19-11.19 0-2.99-1.16-5.8-3.28-7.91A11.1 11.1 0 0 0 16.01 4.8Zm0 20.44h-.01a9.24 9.24 0 0 1-4.71-1.29l-.34-.2-3.42.9.91-3.34-.22-.35a9.25 9.25 0 1 1 7.79 4.28Z"/>
+              </svg>
+            </span>
+            <span class="admin-whatsapp-summary-text">WhatsApp</span>
+          </summary>
+          <form method="POST" action="{{ url_for('main.atualizar_whatsapp_tenant', tenant_slug=tenant.slug) }}" class="admin-whatsapp-form">
+            {{ tenant_whatsapp_form.hidden_tag() }}
+            <label for="{{ tenant_whatsapp_form.whatsapp.id }}" class="mini-label admin-whatsapp-label">WhatsApp da barbearia</label>
+            <div class="admin-whatsapp-inline">
+              {{ tenant_whatsapp_form.whatsapp(class="input admin-whatsapp-input", placeholder="+55 (11) 99999-9999", autocomplete="tel", inputmode="numeric") }}
+              <button type="submit" class="button button-secondary slim-button">Salvar</button>
+            </div>
+            <span class="admin-whatsapp-help">Edite o numero que recebe os contatos e notificacoes da plataforma.</span>
+          </form>
+        </details>
+      </aside>
+    </div>
+  </section>
+
+  <section class="panel compact-panel">
+    <div class="top-row">
+      <div>
+        <p class="eyebrow">Agenda</p>
+        <h2 class="section-title">Agenda por dia e por semana</h2>
+      </div>
+      <form method="GET" action="{{ url_for('main.admin_dashboard', tenant_slug=tenant.slug) }}" class="agenda-filter">
+        <label for="agenda-barber">Barbeiro</label>
+        <select id="agenda-barber" name="barbeiro_id" class="input">
+          {% for barbeiro in barbeiros %}
+            <option value="{{ barbeiro.id }}" {% if selected_barber_id == barbeiro.id %}selected{% endif %}>{{ barbeiro.nome }}</option>
+          {% endfor %}
+        </select>
+        <label for="agenda-day">Dia</label>
+        <input id="agenda-day" name="day" type="date" class="input" value="{{ selected_day.isoformat() }}" />
+        <button type="submit" class="button button-secondary slim-button">Atualizar</button>
+      </form>
+    </div>
+
+    <div class="agenda-layout compact-top">
+      <div class="agenda-block">
+        <div class="agenda-block-head">
+          <strong>Agenda diaria</strong>
+          <span class="muted">{{ active_barber.nome if active_barber else "Slots de 45 em 45 minutos" }}</span>
+        </div>
+        <div class="agenda-day-sections">
+          {% for section in day_schedule %}
+            <div class="agenda-day-section">
+              <div class="agenda-section-title">Agenda da {{ section.label.lower() }}</div>
+              <div class="agenda-day-grid">
+                {% for row in section.rows %}
+                  <div class="agenda-time">{{ row.label }}</div>
+                  <div class="agenda-cell{% if row.appointment %} has-appointment{% endif %}{% if row.is_blocked %} is-blocked{% endif %}{% if row.is_continuation %} is-continuation{% endif %}">
+                    {% if row.appointment %}
+                      <strong>{{ row.appointment.cliente.nome }}</strong>
+                      <span>{{ row.appointment.barbeiro_rel.nome }} - {{ row.appointment.servico_rel.nome }}</span>
+                      <span>{{ "Pix pelo app" if row.appointment.forma_pagamento == "pix" else "Pagar no local" }}</span>
+                      <div class="agenda-actions">
+                        <form method="POST" action="{{ url_for('main.atualizar_status_agendamento', tenant_slug=tenant.slug, appointment_id=row.appointment.id) }}" class="inline-actions">
+                          {{ status_forms[row.appointment.id].csrf_token }}
+                          {{ status_forms[row.appointment.id].status(class="input select-inline") }}
+                          {{ status_forms[row.appointment.id].botao_confirmacao(class="button button-secondary slim-button") }}
+                        </form>
+                      </div>
+                    {% elif row.is_blocked %}
+                      <strong>Bloqueado</strong>
+                      <span>Este horario nao aparece para o cliente.</span>
+                      <div class="agenda-actions">
+                        <form method="POST" action="{{ url_for('main.toggle_slot_disponibilidade', tenant_slug=tenant.slug) }}" class="inline-actions">
+                          {{ slot_form.csrf_token }}
+                          <input type="hidden" name="barbeiro_id" value="{{ selected_barber_id }}" />
+                          <input type="hidden" name="data_referencia" value="{{ selected_day.isoformat() }}" />
+                          <input type="hidden" name="hora_referencia" value="{{ row.label }}" />
+                          <button type="submit" class="button button-secondary slim-button">Liberar slot</button>
+                        </form>
+                      </div>
+                    {% elif row.is_continuation %}
+                      <span class="muted">Em andamento</span>
+                    {% else %}
+                      <strong>Disponivel</strong>
+                      <span>Visivel para agendamento do cliente.</span>
+                      <div class="agenda-actions">
+                        <form method="POST" action="{{ url_for('main.toggle_slot_disponibilidade', tenant_slug=tenant.slug) }}" class="inline-actions">
+                          {{ slot_form.csrf_token }}
+                          <input type="hidden" name="barbeiro_id" value="{{ selected_barber_id }}" />
+                          <input type="hidden" name="data_referencia" value="{{ selected_day.isoformat() }}" />
+                          <input type="hidden" name="hora_referencia" value="{{ row.label }}" />
+                          <button type="submit" class="button button-secondary slim-button">Bloquear slot</button>
+                        </form>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="agenda-block">
+        <div class="agenda-block-head">
+          <strong>Agenda da semana</strong>
+          <span class="muted">{{ week_days[0].strftime('%d/%m') }} ate {{ week_days[-1].strftime('%d/%m') }}</span>
+        </div>
+        <div class="agenda-week-columns">
+          {% for column in week_schedule %}
+            <div class="agenda-week-day">
+              <div class="agenda-week-day-head">
+                <strong>{{ column.day.strftime('%a')|upper }}</strong>
+                <span>{{ column.day.strftime('%d/%m') }}</span>
+              </div>
+              <div class="agenda-week-day-list">
+                {% for appointment in column.appointments %}
+                  <div class="agenda-week-card">
+                    <strong>{{ appointment.hora_agendamento.strftime('%H:%M') }} - {{ appointment.fim.strftime('%H:%M') }}</strong>
+                    <span>{{ appointment.cliente.nome }}</span>
+                    <span>{{ appointment.barbeiro_rel.nome }} - {{ appointment.servico_rel.nome }}</span>
+                  </div>
+                {% else %}
+                  <div class="agenda-week-empty">Livre</div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel compact-panel">
+    <p class="eyebrow">Barbeiros ativos</p>
+    <div class="list-stack">
+      {% for barbeiro in barbeiros %}
+        <div class="list-item">
+          <form method="POST" action="{{ url_for('main.editar_barbeiro', tenant_slug=tenant.slug, barber_id=barbeiro.id) }}" class="form-stack">
+            {{ barbeiro_form.csrf_token }}
+            <input type="text" name="nome" value="{{ barbeiro.nome }}" class="input" />
+            <input type="text" name="especialidade" value="{{ barbeiro.especialidade }}" class="input" />
+            <div class="inline-actions">
+              <button type="submit" class="button button-secondary slim-button">Salvar</button>
+          </form>
+          <form method="POST" action="{{ url_for('main.excluir_barbeiro', tenant_slug=tenant.slug, barber_id=barbeiro.id) }}">
+            {{ barbeiro_form.csrf_token }}
+            <button type="submit" class="button button-danger slim-button">Excluir</button>
+          </form>
+            </div>
+        </div>
+      {% else %}
+        <p class="muted">Sem barbeiros.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel compact-panel">
+    <p class="eyebrow">Servicos</p>
+    <div class="list-stack">
+      {% for servico in servicos %}
+        <div class="list-item">
+          <form method="POST" action="{{ url_for('main.editar_servico', tenant_slug=tenant.slug, service_id=servico.id) }}" class="form-stack">
+            {{ service_form.csrf_token }}
+            <input type="text" name="nome" value="{{ servico.nome }}" class="input" />
+            <div class="grid-two">
+              <input type="text" name="valor" value="{{ servico.valor }}" class="input" />
+              <input type="text" name="duracao_minutos" value="{{ servico.duracao_minutos }}" class="input" />
+            </div>
+            <input type="text" name="icone" value="{{ servico.icone }}" class="input" />
+            <div class="inline-actions">
+              <button type="submit" class="button button-secondary slim-button">Salvar</button>
+          </form>
+          <form method="POST" action="{{ url_for('main.excluir_servico', tenant_slug=tenant.slug, service_id=servico.id) }}">
+            {{ service_form.csrf_token }}
+            <button type="submit" class="button button-danger slim-button">Excluir</button>
+          </form>
+            </div>
+        </div>
+      {% else %}
+        <p class="muted">Sem servicos.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel compact-panel">
+    <p class="eyebrow">Novo barbeiro</p>
+    <form method="POST" action="{{ url_for('main.criar_barbeiro', tenant_slug=tenant.slug) }}" class="form-stack compact-top">
+      {{ barbeiro_form.csrf_token }}
+      <div class="field">
+        {{ barbeiro_form.nome.label }}
+        {{ barbeiro_form.nome(class="input", placeholder="Nome do barbeiro") }}
+      </div>
+      <div class="field">
+        {{ barbeiro_form.especialidade.label }}
+        {{ barbeiro_form.especialidade(class="input", placeholder="Especialidade") }}
+      </div>
+      {{ barbeiro_form.botao_confirmacao(class="button button-primary submit-button") }}
+    </form>
+  </section>
+
+  <section class="panel compact-panel">
+    <p class="eyebrow">Novo servico</p>
+    <form method="POST" action="{{ url_for('main.criar_servico', tenant_slug=tenant.slug) }}" class="form-stack compact-top">
+      {{ service_form.csrf_token }}
+      <div class="field">
+        {{ service_form.nome.label }}
+        {{ service_form.nome(class="input", placeholder="Nome do servico") }}
+      </div>
+      <div class="grid-two">
+        <div class="field">
+          {{ service_form.valor.label }}
+          {{ service_form.valor(class="input", placeholder="35.00") }}
+        </div>
+        <div class="field">
+          {{ service_form.duracao_minutos.label }}
+          {{ service_form.duracao_minutos(class="input", placeholder="40") }}
+        </div>
+      </div>
+      <div class="field">
+        {{ service_form.icone.label }}
+        {{ service_form.icone(class="input", placeholder="CT") }}
+      </div>
+      {{ service_form.botao_confirmacao(class="button button-primary submit-button") }}
+    </form>
+  </section>
+{% endblock %}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="{{ tenant.tema if tenant is defined and tenant.tema in ['dark', 'light', 'pink'] else 'dark' }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <title>{% block title %}NerzilusBee{% endblock %}</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+          <div class="flash-stack">
+            {% for categoria, mensagem in mensagens %}
+              <div class="flash flash-{{ categoria }}">{{ mensagem }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
