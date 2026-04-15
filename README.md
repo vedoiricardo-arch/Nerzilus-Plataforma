@@ -1,4 +1,4 @@
-# NerzilusBee em Flask
+# Nerzilus
 
 Plataforma SaaS multi-tenant para barbearias e saloes, baseada em Flask, PostgreSQL e Asaas.
 
