@@ -1,4 +1,5 @@
-from datetime import date, time
+from datetime import date, time, timedelta
+import os
 import unittest
 from unittest.mock import patch
 
@@ -213,6 +214,8 @@ class AppRoutesTestCase(unittest.TestCase):
             self.assertEqual(subscription.pix_copy_paste, "0002012636pix-copia-cola")
 
     def test_client_quick_access_and_booking(self):
+        booking_day = date.today() + timedelta(days=1)
+
         with self.app.app_context():
             from Nerzilus.models import Appointment, Barber, Service, Tenant, User
 
@@ -243,7 +246,7 @@ class AppRoutesTestCase(unittest.TestCase):
                 data={
                     "barbeiro_id": barbeiro.id,
                     "servico_id": servico.id,
-                    "data_agendamento": "2026-04-15",
+                    "data_agendamento": booking_day.isoformat(),
                     "hora_agendamento": "14:45",
                 },
                 follow_redirects=True,
@@ -533,6 +536,13 @@ class AppRoutesTestCase(unittest.TestCase):
 
         self.assertEqual(resposta.status_code, 302)
         self.assertIn("/t/nerzilus-studio/cliente", resposta.headers["Location"])
+
+    def test_deployed_environment_requires_database_url(self):
+        from Nerzilus import normalize_database_url
+
+        with patch.dict(os.environ, {"REQUIRE_DATABASE_URL": "true"}, clear=False):
+            with self.assertRaises(RuntimeError):
+                normalize_database_url("")
 
 
 if __name__ == "__main__":

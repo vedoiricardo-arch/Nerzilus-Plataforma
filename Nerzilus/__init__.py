@@ -40,6 +40,8 @@ DEFAULT_SERVICE_MODELS = (
 
 def normalize_database_url(database_url):
     if not database_url:
+        if should_require_persistent_database():
+            raise RuntimeError("DATABASE_URL is required in deployed environments.")
         return f"sqlite:///{DEFAULT_DATABASE_PATH.as_posix()}"
     if database_url.startswith("postgres://"):
         return database_url.replace("postgres://", "postgresql+psycopg://", 1)
@@ -53,6 +55,15 @@ def env_flag(name, default=False):
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def should_require_persistent_database():
+    if env_flag("REQUIRE_DATABASE_URL", default=False):
+        return True
+    if os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID"):
+        return True
+    app_base_url = (os.getenv("APP_BASE_URL") or "").lower()
+    return "onrender.com" in app_base_url
 
 
 def create_app():
