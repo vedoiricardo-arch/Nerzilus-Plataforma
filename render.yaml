@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: nerzilusbee
+    name: nerzilus-plataforma
     env: python
-    plan: starter
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn wsgi:application --workers 2 --threads 4 --timeout 120
     healthCheckPath: /healthz
@@ -11,10 +11,10 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: nerzilusbee-db
+          name: nerzilus-plataforma-db
           property: connectionString
       - key: APP_BASE_URL
-        value: https://nerzilusbee.onrender.com
+        value: https://nerzilus-plataforma.onrender.com
       - key: FORCE_HTTPS
         value: "true"
       - key: SESSION_COOKIE_SECURE
@@ -35,5 +35,5 @@ services:
         sync: false
 
 databases:
-  - name: nerzilusbee-db
-    plan: starter
+  - name: nerzilus-plataforma-db
+    plan: free
