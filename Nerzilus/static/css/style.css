@@ -1607,6 +1607,14 @@ h2.section-title {
   gap: 12px;
 }
 
+.billing-pix-qr {
+  width: min(100%, 240px);
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+}
+
 @media (max-width: 699px) {
   .billing-summary-strip,
   .billing-grid {

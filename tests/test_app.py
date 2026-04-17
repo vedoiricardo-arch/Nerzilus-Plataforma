@@ -213,6 +213,55 @@ class AppRoutesTestCase(unittest.TestCase):
             self.assertEqual(subscription.asaas_subscription_id, "sub_asaas_123")
             self.assertEqual(subscription.pix_copy_paste, "0002012636pix-copia-cola")
 
+    def test_webhook_pix_payment_received_activates_access_without_recurring_subscription(self):
+        with self.app.app_context():
+            from Nerzilus import database
+            from Nerzilus.models import Subscription, Tenant, User
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            admin = User.query.filter_by(tenant_id=tenant.id, username="sergioadmin").first()
+            subscription = Subscription.query.filter_by(tenant_id=tenant.id).first()
+            subscription.status = "pending"
+            subscription.billing_interval = "monthly"
+            subscription.billing_method = "PIX"
+            database.session.commit()
+            tenant_id = tenant.id
+            admin_id = admin.id
+
+        resposta = self.client.post(
+            "/webhook/asaas",
+            json={
+                "id": "evt_asaas_pix_123",
+                "event": "PAYMENT_RECEIVED",
+                "payment": {
+                    "id": "pay_pix_123",
+                    "customer": "cus_pix_123",
+                    "status": "RECEIVED",
+                    "billingType": "PIX",
+                    "invoiceUrl": "https://sandbox.asaas.com/i/pay_pix_123",
+                    "dueDate": "2026-04-16",
+                    "externalReference": f"tenant:{tenant_id}:user:{admin_id}",
+                    "payload": "000201pix-copia-cola",
+                    "encodedImage": "ZmFrZS1xci1jb2Rl",
+                },
+            },
+            headers={"asaas-access-token": "asaas_test_token"},
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+
+        with self.app.app_context():
+            from Nerzilus.models import Subscription, Tenant
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            subscription = Subscription.query.filter_by(tenant_id=tenant.id).first()
+            self.assertEqual(subscription.status, "active")
+            self.assertEqual(subscription.billing_method, "PIX")
+            self.assertEqual(subscription.last_payment_id, "pay_pix_123")
+            self.assertEqual(subscription.pix_copy_paste, "000201pix-copia-cola")
+            self.assertEqual(subscription.pix_qr_code, "ZmFrZS1xci1jb2Rl")
+            self.assertIsNotNone(subscription.current_period_end)
+
     def test_client_quick_access_and_booking(self):
         booking_day = date.today() + timedelta(days=1)
 

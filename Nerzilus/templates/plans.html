@@ -6,7 +6,7 @@
   <section class="panel billing-hero">
     <p class="eyebrow">Assinatura SaaS</p>
     <h1 class="section-title">Assine com Asaas</h1>
-    <p class="subtitle">A ativacao continua vindo do webhook. O admin pode fechar a tela e o status sera sincronizado assim que o pagamento for confirmado.</p>
+    <p class="subtitle">A ativacao continua vindo do webhook. No Pix, a cobranca gera QR Code imediato. No cartao, a recorrencia continua automatica.</p>
     <div class="billing-summary-strip">
       <div class="mini-card">
         <span class="mini-label">Plano atual</span>
@@ -33,7 +33,7 @@
         <ul class="billing-feature-list">
           <li>Acesso completo ao ambiente multi-tenant</li>
           <li>Agenda, clientes, barbeiros e servicos</li>
-          <li>7 dias de trial antes da primeira cobranca</li>
+          <li>7 dias de trial antes da primeira cobranca no cartao</li>
           <li>Webhook Asaas como fonte de verdade</li>
         </ul>
 
@@ -56,9 +56,9 @@
   </section>
 
   <section class="panel compact-panel billing-note-card">
-    <p class="eyebrow">Pix recorrente</p>
+    <p class="eyebrow">Pix com QR Code</p>
     <h2 class="section-title">Fluxo com Asaas</h2>
-    <p class="subtitle">O Pix recorrente passa pelo Asaas e nao por cobranca direta na chave. A chave de recebimento deve estar configurada na conta do gateway para o repasse correto.</p>
+    <p class="subtitle">No Pix, a plataforma gera uma cobranca imediata com QR Code e copia e cola. Assim que o pagamento for confirmado pelo webhook, o acesso continua liberado.</p>
     <p class="subtitle">Chave informada para recebimento: <strong>51993338005</strong>.</p>
     {% if not current_user.cpf_cnpj %}
       <p class="subtitle">Antes de assinar, salve o CPF ou CNPJ do responsavel para o Asaas conseguir criar a cobranca.</p>

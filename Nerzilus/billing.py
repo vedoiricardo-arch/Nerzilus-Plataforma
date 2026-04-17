@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 from urllib import error, parse, request
@@ -307,6 +307,18 @@ def interval_to_cycle(billing_interval):
     raise BillingConfigurationError("Periodo de cobranca invalido.")
 
 
+def add_interval(value, billing_interval):
+    if billing_interval == "yearly":
+        return value + timedelta(days=365)
+    return value + timedelta(days=30)
+
+
+def current_access_end(subscription):
+    if subscription is None:
+        return None
+    return ensure_utc(subscription.current_period_end or subscription.trial_end)
+
+
 def update_subscription_from_asaas_data(subscription, tenant, user, subscription_payload=None, payment_payload=None, status_override=None):
     if subscription is None:
         subscription = get_primary_subscription(tenant.id)
@@ -317,6 +329,7 @@ def update_subscription_from_asaas_data(subscription, tenant, user, subscription
     subscription.tenant_id = tenant.id
     subscription.user_id = user.id
     subscription.asaas_customer_id = tenant.asaas_customer_id or subscription.asaas_customer_id
+    had_active_access = subscription_allows_access(subscription)
 
     if subscription_payload:
         subscription.asaas_subscription_id = subscription_payload.get("id", subscription.asaas_subscription_id)
@@ -347,11 +360,20 @@ def update_subscription_from_asaas_data(subscription, tenant, user, subscription
         )
         payment_status = normalize_payment_status(payment_payload.get("status"))
         if payment_status:
-            subscription.status = status_override or payment_status
+            if not (payment_status == "pending" and had_active_access):
+                subscription.status = status_override or payment_status
         due_date = parse_asaas_datetime(payment_payload.get("dueDate"))
         if due_date:
             subscription.next_due_date = due_date
-            subscription.current_period_end = due_date
+            if payment_status == "active":
+                base_end = current_access_end(subscription)
+                payment_reference = max(utcnow(), due_date)
+                period_start = max(base_end, payment_reference) if base_end and base_end > utcnow() else payment_reference
+                period_end = add_interval(period_start, subscription.billing_interval or "monthly")
+                subscription.current_period_end = period_end
+                subscription.next_due_date = period_end
+            elif not had_active_access:
+                subscription.current_period_end = due_date
 
     if tenant.asaas_customer_id != subscription.asaas_customer_id:
         tenant.asaas_customer_id = subscription.asaas_customer_id
@@ -360,12 +382,74 @@ def update_subscription_from_asaas_data(subscription, tenant, user, subscription
     return subscription
 
 
+def create_pix_payment(user, tenant, billing_interval):
+    option = get_plan_catalog().get(billing_interval)
+    if option is None:
+        raise BillingConfigurationError("Plano selecionado nao existe.")
+
+    customer_id = ensure_asaas_customer(user, tenant)
+    payment_payload = {
+        "customer": customer_id,
+        "billingType": "PIX",
+        "value": float(option.amount_brl),
+        "dueDate": date.today().isoformat(),
+        "description": f"{option.name} - {tenant.nome}",
+        "externalReference": f"tenant:{tenant.id}:user:{user.id}",
+    }
+    payment = asaas_request("POST", "/payments", payload=payment_payload)
+    qr_code = asaas_request("GET", f"/payments/{payment['id']}/pixQrCode")
+    payment.update(qr_code)
+
+    subscription = get_primary_subscription(tenant.id)
+    if subscription is None:
+        subscription = Subscription(tenant_id=tenant.id, user_id=user.id, plan=PLAN_KEY)
+        database.session.add(subscription)
+
+    access_active = subscription_allows_access(subscription)
+    subscription.plan = PLAN_KEY
+    subscription.user_id = user.id
+    subscription.tenant_id = tenant.id
+    subscription.asaas_customer_id = customer_id
+    subscription.asaas_subscription_id = None
+    subscription.billing_interval = billing_interval
+    subscription.billing_method = "PIX"
+    subscription.last_payment_id = payment.get("id")
+    subscription.last_invoice_url = payment.get("invoiceUrl")
+    subscription.pix_copy_paste = qr_code.get("payload")
+    subscription.pix_qr_code = qr_code.get("encodedImage")
+    subscription.next_due_date = parse_asaas_datetime(payment.get("dueDate"))
+    if not access_active:
+        subscription.status = "pending"
+        subscription.current_period_end = subscription.next_due_date
+    database.session.commit()
+
+    log_payment_event(
+        "asaas.pix.payment.created",
+        tenant_id=tenant.id,
+        user_id=user.id,
+        external_event_id=payment.get("id"),
+        payload={
+            "payment_id": payment.get("id"),
+            "billing_interval": billing_interval,
+            "billing_method": "PIX",
+        },
+        status="processed",
+    )
+    return SimpleNamespace(
+        url=payment.get("invoiceUrl") or f"{get_app_base_url()}/billing",
+        subscription=subscription,
+        payment=payment,
+    )
+
+
 def create_checkout_session(user, tenant, billing_interval, billing_method):
     option = get_plan_catalog().get(billing_interval)
     if option is None:
         raise BillingConfigurationError("Plano selecionado nao existe.")
     if billing_method not in {"PIX", "CREDIT_CARD"}:
         raise BillingConfigurationError("Metodo de pagamento invalido.")
+    if billing_method == "PIX":
+        return create_pix_payment(user, tenant, billing_interval)
 
     customer_id = ensure_asaas_customer(user, tenant)
     next_due_date = (utcnow() + timedelta(days=TRIAL_DAYS)).date().isoformat()

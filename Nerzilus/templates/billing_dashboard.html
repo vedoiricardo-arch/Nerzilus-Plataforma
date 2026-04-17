@@ -31,7 +31,7 @@
     <article class="panel compact-panel">
       <p class="eyebrow">Gerenciamento</p>
       <h2 class="section-title">Assinar ou trocar ciclo</h2>
-      <p class="subtitle">O checkout cria a recorrencia no Asaas. Para Pix, o admin recebe o link e o copia e cola da cobranca atual.</p>
+      <p class="subtitle">No cartao, o checkout cria a recorrencia no Asaas. No Pix, o sistema gera uma cobranca imediata com QR Code e copia e cola.</p>
 
       <div class="form-stack compact-top">
         {% for interval, option in plan_catalog.items() %}
@@ -75,6 +75,16 @@
       {% endif %}
       {% if subscription and subscription.last_invoice_url %}
         <a href="{{ subscription.last_invoice_url }}" class="button button-secondary" target="_blank" rel="noopener">Abrir link de cobranca</a>
+      {% endif %}
+      {% if subscription and subscription.pix_qr_code %}
+        <div class="compact-top">
+          <label class="field-label">QR Code Pix</label>
+          <img
+            src="data:image/png;base64,{{ subscription.pix_qr_code }}"
+            alt="QR Code Pix"
+            class="billing-pix-qr"
+          />
+        </div>
       {% endif %}
       {% if subscription and subscription.pix_copy_paste %}
         <label class="field-label compact-top">Pix copia e cola</label>
