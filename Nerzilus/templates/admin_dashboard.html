@@ -152,7 +152,10 @@
           {% for column in week_schedule %}
             <div class="agenda-week-day">
               <div class="agenda-week-day-head">
-                <strong>{{ column.day.strftime('%a')|upper }}</strong>
+                <strong>
+                  {% set weekday_names = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'] %}
+                  {{ weekday_names[column.day.weekday()] }}
+                </strong>
                 <span>{{ column.day.strftime('%d/%m') }}</span>
               </div>
               <div class="agenda-week-day-list">
@@ -174,48 +177,6 @@
   </section>
 
   <section class="panel compact-panel">
-    <div class="top-row">
-      <div>
-        <p class="eyebrow">Horarios de atendimento</p>
-        <h2 class="section-title">Editar slots de {{ active_slot_interval_minutes }} minutos</h2>
-      </div>
-      <span class="muted">{{ active_barber.nome if active_barber else "Selecione um barbeiro" }}</span>
-    </div>
-    <p class="subtitle compact-top">Cada linha representa um slot de {{ active_slot_interval_minutes }} em {{ active_slot_interval_minutes }} minutos. Toque em cada celula para ativar ou desativar o horario daquele dia.</p>
-    <div class="working-hours-board compact-top">
-      {% for section in working_hours_editor %}
-        <div class="agenda-day-section working-hours-section">
-          <div class="agenda-section-title">Agenda da {{ section.label.lower() }}</div>
-          <div class="working-hours-table">
-            <div class="working-hours-head">
-              <div class="working-hours-time-label">Hora</div>
-              {% for weekday in section.rows[0].weekdays if section.rows %}
-                <div class="working-hours-day-label">{{ weekday.weekday_label }}</div>
-              {% endfor %}
-            </div>
-            {% for row in section.rows %}
-              <div class="working-hours-row">
-                <div class="working-hours-time">{{ row.label }}</div>
-                {% for weekday in row.weekdays %}
-                  <form method="POST" action="{{ url_for('main.toggle_horario_atendimento', tenant_slug=tenant.slug) }}" class="working-slot-form">
-                    {{ working_slot_form.csrf_token }}
-                    <input type="hidden" name="barbeiro_id" value="{{ selected_barber_id }}" />
-                    <input type="hidden" name="weekday" value="{{ weekday.weekday }}" />
-                    <input type="hidden" name="hora_referencia" value="{{ weekday.label }}" />
-                    <button type="submit" class="working-slot-button{% if weekday.enabled %} is-enabled{% else %} is-disabled{% endif %}" aria-label="{{ weekday.weekday_label }} {{ weekday.label }} {% if weekday.enabled %}ativo{% else %}folga{% endif %}">
-                      {% if weekday.enabled %}On{% else %}Off{% endif %}
-                    </button>
-                  </form>
-                {% endfor %}
-              </div>
-            {% endfor %}
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  </section>
-
-  <section class="panel compact-panel">
     <p class="eyebrow">Barbeiros ativos</p>
     <div class="list-stack">
       {% for barbeiro in barbeiros %}
@@ -224,11 +185,15 @@
             {{ barbeiro_form.csrf_token }}
             <input type="text" name="nome" value="{{ barbeiro.nome }}" class="input" />
             <input type="text" name="especialidade" value="{{ barbeiro.especialidade }}" class="input" />
-            <select name="slot_interval_minutes" class="input">
-              {% for value, label in barbeiro_form.slot_interval_minutes.choices %}
-                <option value="{{ value }}" {% if barbeiro.slot_interval_minutes == value %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
+            <div class="grid-two">
+              <select name="slot_interval_minutes" class="input">
+                {% for value, label in barbeiro_form.slot_interval_minutes.choices %}
+                  <option value="{{ value }}" {% if barbeiro.slot_interval_minutes == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <input type="time" name="expediente_inicio" value="{{ barbeiro.expediente_inicio.strftime('%H:%M') if barbeiro.expediente_inicio else '09:00' }}" class="input" />
+            </div>
+            <input type="time" name="expediente_fim" value="{{ barbeiro.expediente_fim.strftime('%H:%M') if barbeiro.expediente_fim else '21:00' }}" class="input" />
             <div class="inline-actions">
               <button type="submit" class="button button-secondary slim-button">Salvar</button>
           </form>
@@ -287,6 +252,16 @@
       <div class="field">
         {{ barbeiro_form.slot_interval_minutes.label }}
         {{ barbeiro_form.slot_interval_minutes(class="input") }}
+      </div>
+      <div class="grid-two">
+        <div class="field">
+          {{ barbeiro_form.expediente_inicio.label }}
+          {{ barbeiro_form.expediente_inicio(class="input") }}
+        </div>
+        <div class="field">
+          {{ barbeiro_form.expediente_fim.label }}
+          {{ barbeiro_form.expediente_fim(class="input") }}
+        </div>
       </div>
       {{ barbeiro_form.botao_confirmacao(class="button button-primary submit-button") }}
     </form>

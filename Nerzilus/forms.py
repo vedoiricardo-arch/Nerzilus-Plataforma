@@ -33,9 +33,9 @@ STATUS_CHOICES = [
 ]
 
 THEME_CHOICES = [
-    ("dark", "Dark mode"),
-    ("light", "Light mode"),
-    ("pink", "Pink mode"),
+    ("dark", "Modo escuro"),
+    ("light", "Modo claro"),
+    ("pink", "Modo rosa"),
 ]
 
 SLOT_INTERVAL_CHOICES = [
@@ -56,7 +56,7 @@ class ClientAccessForm(FlaskForm):
 
 
 class AdminLoginForm(FlaskForm):
-    username = StringField("Username", validators=[DataRequired(), Length(min=3, max=80)])
+    username = StringField("Usuario", validators=[DataRequired(), Length(min=3, max=80)])
     senha = PasswordField("Senha", validators=[DataRequired(), Length(min=4, max=120)])
     botao_confirmacao = SubmitField("Entrar")
 
@@ -65,11 +65,11 @@ class AdminLoginForm(FlaskForm):
 
 
 class PlatformSignupForm(FlaskForm):
-    nome_barbearia = StringField("Nome da barbearia", validators=[DataRequired(), Length(min=2, max=120)])
-    slug = StringField("Slug da barbearia", validators=[DataRequired(), Length(min=2, max=80)])
-    email = StringField("Email admin", validators=[DataRequired(), Email(), Length(max=255)])
-    username = StringField("Username admin", validators=[DataRequired(), Length(min=3, max=80)])
-    senha = PasswordField("Senha admin", validators=[DataRequired(), Length(min=4, max=120)])
+    nome_barbearia = StringField("Nome do seu negocio", validators=[DataRequired(), Length(min=2, max=120)])
+    slug = StringField("Slug do seu negocio", validators=[DataRequired(), Length(min=2, max=80)])
+    email = StringField("Email do admin", validators=[DataRequired(), Email(), Length(max=255)])
+    username = StringField("Usuario do admin", validators=[DataRequired(), Length(min=3, max=80)])
+    senha = PasswordField("Senha do admin", validators=[DataRequired(), Length(min=4, max=120)])
     whatsapp = TelField("WhatsApp", validators=[Length(max=30)])
     cpf_cnpj = StringField("CPF ou CNPJ", validators=[Length(max=20)])
     botao_confirmacao = SubmitField("Criar conta")
@@ -94,6 +94,8 @@ class PlatformSignupForm(FlaskForm):
 
     def validate_whatsapp(self, field):
         field.data = normalize_phone(field.data) or ""
+        if field.data and len(field.data) not in {12, 13}:
+            raise ValidationError("Use o formato com DDI, por exemplo 5551999999999.")
 
     def validate_cpf_cnpj(self, field):
         field.data = normalize_document(field.data)
@@ -105,14 +107,26 @@ class BarberForm(FlaskForm):
     nome = StringField("Nome", validators=[DataRequired(), Length(min=2, max=120)])
     especialidade = StringField("Especialidade", validators=[DataRequired(), Length(min=2, max=120)])
     slot_interval_minutes = SelectField("Intervalo da agenda", coerce=int, choices=SLOT_INTERVAL_CHOICES, validators=[DataRequired()])
+    expediente_inicio = TimeField("Inicio do expediente", format="%H:%M", validators=[DataRequired()])
+    expediente_fim = TimeField("Fim do expediente", format="%H:%M", validators=[DataRequired()])
     botao_confirmacao = SubmitField("Salvar")
+
+    def validate_nome(self, field):
+        field.data = field.data.strip()
+
+    def validate_especialidade(self, field):
+        field.data = field.data.strip()
+
+    def validate_expediente_fim(self, field):
+        if self.expediente_inicio.data and field.data and field.data <= self.expediente_inicio.data:
+            raise ValidationError("O fim do expediente deve ser depois do inicio.")
 
 
 class ServiceForm(FlaskForm):
     nome = StringField("Servico", validators=[DataRequired(), Length(min=2, max=120)])
     valor = DecimalField("Valor", places=2, validators=[DataRequired(), NumberRange(min=0)])
     duracao_minutos = IntegerField("Duracao em minutos", validators=[DataRequired(), NumberRange(min=5, max=480)])
-    icone = StringField("Icone", validators=[DataRequired(), Length(min=1, max=4)])
+    icone = StringField("Sigla", validators=[DataRequired(), Length(min=1, max=4)])
     botao_confirmacao = SubmitField("Salvar")
 
     def validate_duracao_minutos(self, field):
@@ -143,13 +157,6 @@ class SlotAvailabilityForm(FlaskForm):
     data_referencia = HiddenField(validators=[DataRequired()])
     hora_referencia = HiddenField(validators=[DataRequired()])
     botao_confirmacao = SubmitField("Atualizar")
-
-
-class BarberWorkingSlotForm(FlaskForm):
-    barbeiro_id = HiddenField(validators=[DataRequired()])
-    weekday = HiddenField(validators=[DataRequired()])
-    hora_referencia = HiddenField(validators=[DataRequired()])
-    botao_confirmacao = SubmitField("Atualizar horario")
 
 
 class TenantWhatsAppForm(FlaskForm):

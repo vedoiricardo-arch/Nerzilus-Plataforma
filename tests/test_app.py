@@ -69,7 +69,7 @@ class AppRoutesTestCase(unittest.TestCase):
         self.assertIn(b"Nerzilus", resposta.data)
         self.assertIn("ACESSO AO MEU NEGÓCIO".encode("utf-8"), resposta.data)
         self.assertIn(b"Criar conta", resposta.data)
-        self.assertNotIn(b"Nome da sua barbearia", resposta.data)
+        self.assertNotIn(b"Nome do seu negocio", resposta.data)
 
     def test_homepage_creates_new_barbershop_account_with_trial_subscription(self):
         resposta = self.client.post(
@@ -80,7 +80,7 @@ class AppRoutesTestCase(unittest.TestCase):
                 "signup-email": "fenix@barbearia.com",
                 "signup-username": "fenixadmin",
                 "signup-senha": "123456",
-                "signup-whatsapp": "11977777777",
+                "signup-whatsapp": "5551997777777",
                 "signup-cpf_cnpj": "12345678901",
                 "signup-botao_confirmacao": True,
             },
@@ -110,8 +110,8 @@ class AppRoutesTestCase(unittest.TestCase):
         resposta = self.client.get("/?criar_conta=1")
 
         self.assertEqual(resposta.status_code, 200)
-        self.assertIn(b"Nome da sua barbearia", resposta.data)
-        self.assertIn("Email admin".encode("utf-8"), resposta.data)
+        self.assertIn(b"Nome do seu negocio", resposta.data)
+        self.assertIn("Email do admin".encode("utf-8"), resposta.data)
 
     def test_homepage_logs_admin_by_username_and_password(self):
         resposta = self.login_admin()
@@ -369,13 +369,13 @@ class AppRoutesTestCase(unittest.TestCase):
                 "barbeiro_id": barber.id,
                 "servico_id": service.id,
                 "data_agendamento": "2026-04-16",
-                "hora_agendamento": "14:00",
+                "hora_agendamento": "18:30",
             },
             follow_redirects=True,
         )
         self.assertIn(b"bloqueado pela barbearia", tentativa.data.lower())
 
-    def test_admin_can_edit_working_hours_by_slot(self):
+    def test_admin_can_edit_barber_workday(self):
         self.client.post(
             "/t/nerzilus-studio/admin/login",
             data={"username": "sergioadmin", "senha": "admin123"},
@@ -389,18 +389,20 @@ class AppRoutesTestCase(unittest.TestCase):
             service = Service.query.filter_by(nome="Acabamento").first()
 
         resposta = self.client.post(
-            "/t/nerzilus-studio/admin/agenda/horarios",
+            f"/t/nerzilus-studio/admin/barbeiros/{barber.id}/editar",
             data={
-                "barbeiro_id": barber.id,
-                "weekday": 3,
-                "hora_referencia": "14:00",
+                "nome": barber.nome,
+                "especialidade": barber.especialidade,
+                "slot_interval_minutes": barber.slot_interval_minutes,
+                "expediente_inicio": "10:00",
+                "expediente_fim": "18:00",
                 "botao_confirmacao": True,
             },
             follow_redirects=True,
         )
 
         self.assertEqual(resposta.status_code, 200)
-        self.assertIn("Horario de atendimento removido".encode("utf-8"), resposta.data)
+        self.assertIn("Barbeiro atualizado.".encode("utf-8"), resposta.data)
 
         self.client.get("/logout", follow_redirects=True)
         self.client.post(
@@ -413,6 +415,7 @@ class AppRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertIn("Fora do horario de atendimento".encode("utf-8"), visualizacao.data)
+        self.assertIn(b"10:30", visualizacao.data)
 
         tentativa = self.client.post(
             "/t/nerzilus-studio/cliente/dashboard",
@@ -420,7 +423,7 @@ class AppRoutesTestCase(unittest.TestCase):
                 "barbeiro_id": barber.id,
                 "servico_id": service.id,
                 "data_agendamento": "2026-04-16",
-                "hora_agendamento": "14:00",
+                "hora_agendamento": "18:30",
             },
             follow_redirects=True,
         )
@@ -444,14 +447,15 @@ class AppRoutesTestCase(unittest.TestCase):
                 "nome": barber.nome,
                 "especialidade": barber.especialidade,
                 "slot_interval_minutes": 30,
+                "expediente_inicio": "09:00",
+                "expediente_fim": "21:00",
                 "botao_confirmacao": True,
             },
             follow_redirects=True,
         )
 
         self.assertEqual(resposta.status_code, 200)
-        self.assertIn("nova grade de horarios".encode("utf-8"), resposta.data)
-        self.assertIn("slots de 30 minutos".encode("utf-8"), resposta.data)
+        self.assertIn("Barbeiro atualizado.".encode("utf-8"), resposta.data)
 
         self.client.get("/logout", follow_redirects=True)
         self.client.post(

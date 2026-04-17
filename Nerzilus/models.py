@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from datetime import time as datetime_time
 
 from flask_login import UserMixin
 
@@ -71,6 +72,8 @@ class Barber(database.Model):
     especialidade = database.Column(database.String(120), nullable=False)
     icone = database.Column(database.String(4), nullable=False, default="BR")
     slot_interval_minutes = database.Column(database.Integer, nullable=False, default=45)
+    expediente_inicio = database.Column(database.Time, nullable=False, default=lambda: datetime_time(hour=9, minute=0))
+    expediente_fim = database.Column(database.Time, nullable=False, default=lambda: datetime_time(hour=21, minute=0))
     ativo = database.Column(database.Boolean, nullable=False, default=True)
     criado_em = database.Column(database.DateTime, nullable=False, default=utcnow)
     agendamentos = database.relationship("Appointment", backref="barbeiro_rel", lazy=True)
@@ -131,25 +134,6 @@ class BarberUnavailableSlot(database.Model):
     tenant_id = database.Column(database.Integer, database.ForeignKey("tenant.id"), nullable=False, index=True)
     barbeiro_id = database.Column(database.Integer, database.ForeignKey("barber.id"), nullable=False, index=True)
     data_referencia = database.Column(database.Date, nullable=False)
-    hora_referencia = database.Column(database.Time, nullable=False)
-    criado_em = database.Column(database.DateTime, nullable=False, default=utcnow)
-
-
-class BarberWorkingSlot(database.Model):
-    __table_args__ = (
-        database.UniqueConstraint(
-            "tenant_id",
-            "barbeiro_id",
-            "weekday",
-            "hora_referencia",
-            name="uq_barber_working_slot",
-        ),
-    )
-
-    id = database.Column(database.Integer, primary_key=True)
-    tenant_id = database.Column(database.Integer, database.ForeignKey("tenant.id"), nullable=False, index=True)
-    barbeiro_id = database.Column(database.Integer, database.ForeignKey("barber.id"), nullable=False, index=True)
-    weekday = database.Column(database.Integer, nullable=False)
     hora_referencia = database.Column(database.Time, nullable=False)
     criado_em = database.Column(database.DateTime, nullable=False, default=utcnow)
 

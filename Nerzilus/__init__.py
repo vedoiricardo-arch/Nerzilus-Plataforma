@@ -204,6 +204,14 @@ def ensure_schema_updates():
     if "slot_interval_minutes" not in barber_columns:
         with database.engine.begin() as connection:
             connection.execute(text("ALTER TABLE barber ADD COLUMN slot_interval_minutes INTEGER DEFAULT 45"))
+    if "expediente_inicio" not in barber_columns:
+        with database.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE barber ADD COLUMN expediente_inicio TIME"))
+            connection.execute(text("UPDATE barber SET expediente_inicio = '09:00:00' WHERE expediente_inicio IS NULL"))
+    if "expediente_fim" not in barber_columns:
+        with database.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE barber ADD COLUMN expediente_fim TIME"))
+            connection.execute(text("UPDATE barber SET expediente_fim = '21:00:00' WHERE expediente_fim IS NULL"))
 
     subscription_columns = {column["name"] for column in inspector.get_columns("subscription")}
     if "asaas_customer_id" not in subscription_columns:
@@ -238,7 +246,7 @@ def ensure_schema_updates():
 
 
 def seed_tenant_defaults(tenant_id):
-    from Nerzilus.models import Barber, BarberWorkingSlot, Service
+    from Nerzilus.models import Barber, Service
 
     existing_barbers = Barber.query.filter_by(tenant_id=tenant_id).order_by(Barber.nome.asc()).all()
     existing_names = [barber.nome for barber in existing_barbers]
@@ -253,7 +261,15 @@ def seed_tenant_defaults(tenant_id):
     for nome, especialidade, icone in DEFAULT_BARBER_MODELS:
         barber = existing_barbers_by_name.get(nome)
         if barber is None:
-            barber = Barber(tenant_id=tenant_id, nome=nome, especialidade=especialidade, icone=icone, slot_interval_minutes=45)
+            barber = Barber(
+                tenant_id=tenant_id,
+                nome=nome,
+                especialidade=especialidade,
+                icone=icone,
+                slot_interval_minutes=45,
+                expediente_inicio=datetime_time(hour=9, minute=0),
+                expediente_fim=datetime_time(hour=21, minute=0),
+            )
             database.session.add(barber)
             continue
         if not barber.especialidade:
@@ -262,6 +278,10 @@ def seed_tenant_defaults(tenant_id):
             barber.icone = icone
         if not barber.slot_interval_minutes:
             barber.slot_interval_minutes = 45
+        if not barber.expediente_inicio:
+            barber.expediente_inicio = datetime_time(hour=9, minute=0)
+        if not barber.expediente_fim:
+            barber.expediente_fim = datetime_time(hour=21, minute=0)
 
     existing_services = Service.query.filter_by(tenant_id=tenant_id).all()
     existing_services_by_name = {service.nome: service for service in existing_services}
@@ -296,32 +316,6 @@ def seed_tenant_defaults(tenant_id):
         }:
             service.duracao_minutos = duracao
 
-    database.session.flush()
-    barbers = Barber.query.filter_by(tenant_id=tenant_id).all()
-    for barber in barbers:
-        has_working_slots = BarberWorkingSlot.query.filter_by(tenant_id=tenant_id, barbeiro_id=barber.id).first()
-        if has_working_slots:
-            continue
-        base_slots = []
-        for _, _, start_time, end_time in (
-            ("manha", "Manha", datetime_time(hour=9, minute=0), datetime_time(hour=12, minute=0)),
-            ("tarde", "Tarde", datetime_time(hour=14, minute=0), datetime_time(hour=21, minute=0)),
-        ):
-            current_slot = datetime.combine(date.today(), start_time)
-            final_slot = datetime.combine(date.today(), end_time)
-            while current_slot <= final_slot:
-                base_slots.append(current_slot.time())
-                current_slot += timedelta(minutes=barber.slot_interval_minutes or AGENDA_SLOT_MINUTES)
-        for weekday in range(6):
-            for slot_time in base_slots:
-                database.session.add(
-                    BarberWorkingSlot(
-                        tenant_id=tenant_id,
-                        barbeiro_id=barber.id,
-                        weekday=weekday,
-                        hora_referencia=slot_time,
-                    )
-                )
 
 
 def slugify_text(value):

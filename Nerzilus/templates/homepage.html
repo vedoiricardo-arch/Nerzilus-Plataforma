@@ -40,25 +40,25 @@
         {% if show_signup %}
           <div class="panel landing-panel" id="criar-conta">
             <p class="eyebrow">Criar conta</p>
-            <h2 class="section-title">Trazer minha barbearia para a Nerzilus</h2>
-            <p class="subtitle">Preencha os dados da barbearia e crie o acesso administrativo.</p>
+            <h2 class="section-title">Trazer meu negocio para a Nerzilus</h2>
+            <p class="subtitle">Preencha os dados do seu negocio e crie o acesso administrativo.</p>
 
             <form method="POST" class="form-stack compact-top">
               {{ signup_form.csrf_token }}
               <div class="field">
                 {{ signup_form.nome_barbearia.label }}
-                {{ signup_form.nome_barbearia(class="input", placeholder="Nome da sua barbearia") }}
+                {{ signup_form.nome_barbearia(class="input", placeholder="Nome do seu negocio") }}
                 {% for erro in signup_form.nome_barbearia.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
               </div>
               <div class="field">
                 {{ signup_form.slug.label }}
-                {{ signup_form.slug(class="input", placeholder="minha-barbearia") }}
+                {{ signup_form.slug(class="input", placeholder="meu-negocio") }}
                 {% for erro in signup_form.slug.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
               </div>
               <div class="grid-two">
                 <div class="field">
                   {{ signup_form.email.label }}
-                  {{ signup_form.email(class="input", placeholder="admin@barbearia.com") }}
+                  {{ signup_form.email(class="input", placeholder="admin@meunegocio.com") }}
                   {% for erro in signup_form.email.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
                 </div>
                 <div class="field">
@@ -76,7 +76,8 @@
               </div>
               <div class="field">
                 {{ signup_form.whatsapp.label }}
-                {{ signup_form.whatsapp(class="input", placeholder="11999999999") }}
+                {{ signup_form.whatsapp(class="input", placeholder="5551999999999") }}
+                <p class="subtitle">Use o formato com 55 na frente. Exemplo: 5551999999999.</p>
                 {% for erro in signup_form.whatsapp.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
               </div>
               <div class="field">

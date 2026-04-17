@@ -34,7 +34,6 @@ from Nerzilus.forms import (
     AppointmentForm,
     AppointmentStatusForm,
     BarberForm,
-    BarberWorkingSlotForm,
     BillingCancelForm,
     BillingCheckoutForm,
     BillingCustomerForm,
@@ -46,7 +45,7 @@ from Nerzilus.forms import (
     TenantThemeForm,
     TenantWhatsAppForm,
 )
-from Nerzilus.models import Appointment, Barber, BarberUnavailableSlot, BarberWorkingSlot, PaymentEventLog, Service, Subscription, Tenant, User
+from Nerzilus.models import Appointment, Barber, BarberUnavailableSlot, PaymentEventLog, Service, Subscription, Tenant, User
 from Nerzilus.notifications import (
     build_whatsapp_link,
     format_phone_display,
@@ -131,6 +130,21 @@ def get_barber_slot_interval(tenant_id, barber_id):
     return barber.slot_interval_minutes
 
 
+def get_barber_workday(tenant_id, barber_id):
+    default_start = time(hour=9, minute=0)
+    default_end = time(hour=21, minute=0)
+    if not barber_id:
+        return default_start, default_end
+    barber = Barber.query.filter_by(id=barber_id, tenant_id=tenant_id).first()
+    if barber is None:
+        return default_start, default_end
+    start = barber.expediente_inicio or default_start
+    end = barber.expediente_fim or default_end
+    if end <= start:
+        return default_start, default_end
+    return start, end
+
+
 def has_overlap(tenant_id, barber_id, service, selected_date, selected_time, ignore_appointment_id=None):
     agendamentos = (
         Appointment.query.filter_by(tenant_id=tenant_id, barbeiro_id=barber_id)
@@ -174,20 +188,13 @@ def get_standard_slot_labels(slot_interval_minutes=AGENDA_SLOT_MINUTES):
 
 def get_working_slot_labels(tenant_id, barber_id, selected_day):
     slot_interval_minutes = get_barber_slot_interval(tenant_id, barber_id)
-    if not barber_id or not selected_day:
-        return set(get_standard_slot_labels(slot_interval_minutes))
-    slots = (
-        BarberWorkingSlot.query.filter_by(
-            tenant_id=tenant_id,
-            barbeiro_id=barber_id,
-            weekday=selected_day.weekday(),
-        )
-        .order_by(BarberWorkingSlot.hora_referencia.asc())
-        .all()
-    )
-    if not slots:
-        return set(get_standard_slot_labels(slot_interval_minutes))
-    return {slot.hora_referencia.strftime("%H:%M") for slot in slots}
+    workday_start, workday_end = get_barber_workday(tenant_id, barber_id)
+    working_labels = set()
+    for label in get_standard_slot_labels(slot_interval_minutes):
+        slot_time = datetime.strptime(label, "%H:%M").time()
+        if workday_start <= slot_time <= workday_end:
+            working_labels.add(label)
+    return working_labels
 
 
 def build_platform_signup_form():
@@ -317,36 +324,6 @@ def build_booking_time_sections_for_barber(tenant_id, barber_id, appointments, s
             )
         booking_sections.append({**section, "rows": rows})
     return booking_sections
-
-
-def build_working_hours_editor(tenant_id, barber_id):
-    slot_interval_minutes = get_barber_slot_interval(tenant_id, barber_id)
-    weekday_labels = [(0, "Seg"), (1, "Ter"), (2, "Qua"), (3, "Qui"), (4, "Sex"), (5, "Sab"), (6, "Dom")]
-    all_slots = []
-    if barber_id:
-        all_slots = BarberWorkingSlot.query.filter_by(tenant_id=tenant_id, barbeiro_id=barber_id).all()
-    active_keys = {(slot.weekday, slot.hora_referencia.strftime("%H:%M")) for slot in all_slots}
-    if not all_slots and barber_id:
-        active_keys = {(weekday, label) for weekday, _ in weekday_labels[:6] for label in get_standard_slot_labels(slot_interval_minutes)}
-
-    sections = []
-    for section_key, section_label, start_time, end_time in AGENDA_PERIODS:
-        rows = []
-        for slot in build_time_slots(start_time, end_time, slot_interval_minutes):
-            label = slot.strftime("%H:%M")
-            weekdays = []
-            for weekday, weekday_label in weekday_labels:
-                weekdays.append(
-                    {
-                        "weekday": weekday,
-                        "weekday_label": weekday_label,
-                        "label": label,
-                        "enabled": (weekday, label) in active_keys,
-                    }
-                )
-            rows.append({"label": label, "weekdays": weekdays})
-        sections.append({"key": section_key, "label": section_label, "rows": rows})
-    return sections
 
 
 def build_week_schedule(appointments, week_start):
@@ -834,7 +811,6 @@ def admin_dashboard(tenant):
     barbeiro_form = BarberForm()
     service_form = ServiceForm()
     slot_form = SlotAvailabilityForm()
-    working_slot_form = BarberWorkingSlotForm()
     tenant_whatsapp_form = TenantWhatsAppForm()
     tenant_theme_form = TenantThemeForm()
     tenant_whatsapp_form.whatsapp.data = format_phone_display(resolve_admin_whatsapp(tenant))
@@ -858,6 +834,8 @@ def admin_dashboard(tenant):
         active_barber = next((barber for barber in barbeiros if barber.id == selected_barber_id), barbeiros[0])
         selected_barber_id = active_barber.id
         barbeiro_form.slot_interval_minutes.data = active_barber.slot_interval_minutes or AGENDA_SLOT_MINUTES
+        barbeiro_form.expediente_inicio.data = active_barber.expediente_inicio
+        barbeiro_form.expediente_fim.data = active_barber.expediente_fim
     active_slot_interval_minutes = get_barber_slot_interval(tenant.id, selected_barber_id)
     week_start = selected_day - timedelta(days=selected_day.weekday())
     day_appointments = [
@@ -896,12 +874,10 @@ def admin_dashboard(tenant):
             working_slot_labels,
             active_slot_interval_minutes,
         ),
-        working_hours_editor=build_working_hours_editor(tenant.id, selected_barber_id),
         active_slot_interval_minutes=active_slot_interval_minutes,
         week_days=week_days,
         week_schedule=week_schedule,
         status_forms=status_forms,
-        working_slot_form=working_slot_form,
         subscription=get_primary_subscription(tenant.id),
         tenant=tenant,
         hero_image_url=tenant_hero_image_url(tenant),
@@ -997,20 +973,11 @@ def criar_barbeiro(tenant):
             especialidade=form.especialidade.data,
             icone=slugify_text(form.nome.data)[:2].upper() or "BR",
             slot_interval_minutes=form.slot_interval_minutes.data,
+            expediente_inicio=form.expediente_inicio.data,
+            expediente_fim=form.expediente_fim.data,
             ativo=True,
         )
         database.session.add(barber)
-        database.session.flush()
-        for weekday in range(6):
-            for slot_label in get_standard_slot_labels(barber.slot_interval_minutes):
-                database.session.add(
-                    BarberWorkingSlot(
-                        tenant_id=tenant.id,
-                        barbeiro_id=barber.id,
-                        weekday=weekday,
-                        hora_referencia=datetime.strptime(slot_label, "%H:%M").time(),
-                    )
-                )
         database.session.commit()
         flash("Barbeiro criado.", "success")
     else:
@@ -1097,27 +1064,13 @@ def editar_barbeiro(tenant, barber_id):
     barbeiro = Barber.query.filter_by(id=barber_id, tenant_id=tenant.id).first_or_404()
     form = BarberForm()
     if form.validate_on_submit():
-        interval_changed = barbeiro.slot_interval_minutes != form.slot_interval_minutes.data
         barbeiro.nome = form.nome.data
         barbeiro.especialidade = form.especialidade.data
         barbeiro.slot_interval_minutes = form.slot_interval_minutes.data
-        if interval_changed:
-            BarberWorkingSlot.query.filter_by(tenant_id=tenant.id, barbeiro_id=barbeiro.id).delete()
-            for weekday in range(6):
-                for slot_label in get_standard_slot_labels(barbeiro.slot_interval_minutes):
-                    database.session.add(
-                        BarberWorkingSlot(
-                            tenant_id=tenant.id,
-                            barbeiro_id=barbeiro.id,
-                            weekday=weekday,
-                            hora_referencia=datetime.strptime(slot_label, "%H:%M").time(),
-                        )
-                    )
+        barbeiro.expediente_inicio = form.expediente_inicio.data
+        barbeiro.expediente_fim = form.expediente_fim.data
         database.session.commit()
-        if interval_changed:
-            flash("Barbeiro atualizado com nova grade de horarios.", "success")
-        else:
-            flash("Barbeiro atualizado.", "success")
+        flash("Barbeiro atualizado.", "success")
     else:
         flash("Nao foi possivel atualizar.", "error")
     return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
@@ -1133,7 +1086,6 @@ def excluir_barbeiro(tenant, barber_id):
     if barbeiro.agendamentos:
         barbeiro.ativo = False
     else:
-        BarberWorkingSlot.query.filter_by(tenant_id=tenant.id, barbeiro_id=barbeiro.id).delete()
         BarberUnavailableSlot.query.filter_by(tenant_id=tenant.id, barbeiro_id=barbeiro.id).delete()
         database.session.delete(barbeiro)
     database.session.commit()
@@ -1239,49 +1191,3 @@ def toggle_slot_disponibilidade(tenant):
     )
 
 
-@main_bp.route("/t/<tenant_slug>/admin/agenda/horarios", methods=["POST"])
-@login_required
-@tenant_member_required
-@admin_required
-@subscription_required
-def toggle_horario_atendimento(tenant):
-    form = BarberWorkingSlotForm()
-    if not form.validate_on_submit():
-        flash("Nao foi possivel atualizar o horario de atendimento.", "error")
-        return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
-
-    barber_id = int(form.barbeiro_id.data)
-    weekday = int(form.weekday.data)
-    selected_time = datetime.strptime(form.hora_referencia.data, "%H:%M").time()
-    barber = Barber.query.filter_by(id=barber_id, tenant_id=tenant.id, ativo=True).first_or_404()
-
-    existing_slot = BarberWorkingSlot.query.filter_by(
-        tenant_id=tenant.id,
-        barbeiro_id=barber.id,
-        weekday=weekday,
-        hora_referencia=selected_time,
-    ).first()
-
-    if existing_slot is None:
-        database.session.add(
-            BarberWorkingSlot(
-                tenant_id=tenant.id,
-                barbeiro_id=barber.id,
-                weekday=weekday,
-                hora_referencia=selected_time,
-            )
-        )
-        database.session.commit()
-        flash("Horario de atendimento liberado para este slot.", "success")
-    else:
-        database.session.delete(existing_slot)
-        database.session.commit()
-        flash("Horario de atendimento removido deste slot.", "success")
-
-    return redirect(
-        url_for(
-            "main.admin_dashboard",
-            tenant_slug=tenant.slug,
-            barbeiro_id=barber.id,
-        )
-    )
