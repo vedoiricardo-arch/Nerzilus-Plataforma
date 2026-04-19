@@ -1,3 +1,4 @@
+import mimetypes
 import os
 import re
 import unicodedata
@@ -115,11 +116,13 @@ def create_app():
             database.create_all()
             ensure_schema_updates()
             seed_initial_data()
+            migrate_legacy_hero_images()
         except OperationalError:
             database.drop_all()
             database.create_all()
             ensure_schema_updates()
             seed_initial_data()
+            migrate_legacy_hero_images()
 
     return app
 
@@ -179,12 +182,40 @@ def seed_initial_data():
     database.session.commit()
 
 
+def migrate_legacy_hero_images():
+    from Nerzilus.models import Tenant
+
+    upload_dir = Path(os.getenv("UPLOAD_FOLDER") or DEFAULT_UPLOAD_DIR)
+    tenants = Tenant.query.filter(
+        Tenant.hero_image.is_not(None),
+        Tenant.hero_image_data.is_(None),
+    ).all()
+
+    migrated = False
+    for tenant in tenants:
+        file_path = upload_dir / tenant.hero_image
+        if not file_path.exists():
+            continue
+        tenant.hero_image_data = file_path.read_bytes()
+        tenant.hero_image_mimetype = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
+        migrated = True
+
+    if migrated:
+        database.session.commit()
+
+
 def ensure_schema_updates():
     inspector = inspect(database.engine)
     tenant_columns = {column["name"] for column in inspector.get_columns("tenant")}
     if "hero_image" not in tenant_columns:
         with database.engine.begin() as connection:
             connection.execute(text("ALTER TABLE tenant ADD COLUMN hero_image VARCHAR(255)"))
+    if "hero_image_data" not in tenant_columns:
+        with database.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE tenant ADD COLUMN hero_image_data BLOB"))
+    if "hero_image_mimetype" not in tenant_columns:
+        with database.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE tenant ADD COLUMN hero_image_mimetype VARCHAR(120)"))
     if "stripe_customer_id" not in tenant_columns:
         with database.engine.begin() as connection:
             connection.execute(text("ALTER TABLE tenant ADD COLUMN stripe_customer_id VARCHAR(120)"))

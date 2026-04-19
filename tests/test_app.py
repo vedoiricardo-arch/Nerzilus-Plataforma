@@ -1,4 +1,5 @@
 from datetime import date, time, timedelta
+from io import BytesIO
 import os
 import unittest
 from unittest.mock import patch
@@ -118,7 +119,8 @@ class AppRoutesTestCase(unittest.TestCase):
         conteudo = resposta.get_data(as_text=True)
 
         self.assertEqual(resposta.status_code, 200)
-        self.assertIn("SERGIO LIMA BARBER E SALAO", conteudo)
+        self.assertIn("Sergio Lima Barber e Salao", conteudo)
+        self.assertIn("Resumo do negocio", conteudo)
         self.assertIn("/t/nerzilus-studio/cliente", conteudo)
         self.assertIn("Assinatura SaaS", conteudo)
 
@@ -337,6 +339,47 @@ class AppRoutesTestCase(unittest.TestCase):
             self.assertEqual(len(clientes), 1)
             self.assertEqual(clientes[0].nome, "Cliente Atualizado")
 
+    def test_booking_creates_persistent_revenue_record(self):
+        booking_day = date.today() + timedelta(days=1)
+
+        self.client.post(
+            "/t/nerzilus-studio/cliente",
+            data={"nome": "Cliente Faturamento", "telefone": "11912121212"},
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus.models import Barber, RevenueRecord, Service, Tenant
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            barber = Barber.query.filter_by(tenant_id=tenant.id).order_by(Barber.nome.asc()).first()
+            service = Service.query.filter_by(tenant_id=tenant.id, nome="Corte").first()
+
+        with patch("Nerzilus.routes.send_booking_whatsapp_notification"):
+            resposta = self.client.post(
+                "/t/nerzilus-studio/cliente/dashboard",
+                data={
+                    "barbeiro_id": barber.id,
+                    "servico_id": service.id,
+                    "data_agendamento": booking_day.isoformat(),
+                    "hora_agendamento": "14:45",
+                },
+                follow_redirects=True,
+            )
+
+        self.assertEqual(resposta.status_code, 200)
+
+        with self.app.app_context():
+            from Nerzilus.models import Appointment, RevenueRecord
+
+            appointment = Appointment.query.first()
+            revenue = RevenueRecord.query.filter_by(appointment_id=appointment.id).first()
+
+            self.assertIsNotNone(revenue)
+            self.assertEqual(revenue.cliente_nome, "Cliente Faturamento")
+            self.assertEqual(float(revenue.valor), 35.0)
+            self.assertEqual(revenue.status, "confirmado")
+
     def test_booking_whatsapp_message_has_readable_spacing_and_emojis(self):
         with self.app.app_context():
             from Nerzilus import database
@@ -385,12 +428,13 @@ class AppRoutesTestCase(unittest.TestCase):
 
             barber = Barber.query.filter_by(nome="Barbeiro Modelo").first()
             service = Service.query.filter_by(nome="Acabamento").first()
+            selected_day = date.today() + timedelta(days=2)
 
         resposta = self.client.post(
             "/t/nerzilus-studio/admin/agenda/slot",
             data={
                 "barbeiro_id": barber.id,
-                "data_referencia": "2026-04-16",
+                "data_referencia": selected_day.isoformat(),
                 "hora_referencia": "14:00",
                 "botao_confirmacao": True,
             },
@@ -407,7 +451,7 @@ class AppRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         visualizacao = self.client.get(
-            f"/t/nerzilus-studio/cliente/dashboard?barbeiro_id={barber.id}&data_agendamento=2026-04-16",
+            f"/t/nerzilus-studio/cliente/dashboard?barbeiro_id={barber.id}&data_agendamento={selected_day.isoformat()}",
             follow_redirects=True,
         )
         self.assertIn("Horario bloqueado pela barbearia".encode("utf-8"), visualizacao.data)
@@ -417,8 +461,8 @@ class AppRoutesTestCase(unittest.TestCase):
             data={
                 "barbeiro_id": barber.id,
                 "servico_id": service.id,
-                "data_agendamento": "2026-04-16",
-                "hora_agendamento": "18:30",
+                "data_agendamento": selected_day.isoformat(),
+                "hora_agendamento": "14:00",
             },
             follow_redirects=True,
         )
@@ -436,6 +480,7 @@ class AppRoutesTestCase(unittest.TestCase):
 
             barber = Barber.query.filter_by(nome="Barbeiro Modelo").first()
             service = Service.query.filter_by(nome="Acabamento").first()
+            selected_day = date.today() + timedelta(days=2)
 
         resposta = self.client.post(
             f"/t/nerzilus-studio/admin/barbeiros/{barber.id}/editar",
@@ -460,7 +505,7 @@ class AppRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         visualizacao = self.client.get(
-            f"/t/nerzilus-studio/cliente/dashboard?barbeiro_id={barber.id}&data_agendamento=2026-04-16",
+            f"/t/nerzilus-studio/cliente/dashboard?barbeiro_id={barber.id}&data_agendamento={selected_day.isoformat()}",
             follow_redirects=True,
         )
         self.assertIn("Fora do horario de atendimento".encode("utf-8"), visualizacao.data)
@@ -471,7 +516,7 @@ class AppRoutesTestCase(unittest.TestCase):
             data={
                 "barbeiro_id": barber.id,
                 "servico_id": service.id,
-                "data_agendamento": "2026-04-16",
+                "data_agendamento": selected_day.isoformat(),
                 "hora_agendamento": "18:30",
             },
             follow_redirects=True,
@@ -489,6 +534,7 @@ class AppRoutesTestCase(unittest.TestCase):
             from Nerzilus.models import Barber
 
             barber = Barber.query.filter_by(nome="Barbeiro Modelo").first()
+            selected_day = date.today() + timedelta(days=2)
 
         resposta = self.client.post(
             f"/t/nerzilus-studio/admin/barbeiros/{barber.id}/editar",
@@ -513,7 +559,7 @@ class AppRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         visualizacao = self.client.get(
-            f"/t/nerzilus-studio/cliente/dashboard?barbeiro_id={barber.id}&data_agendamento=2026-04-16",
+            f"/t/nerzilus-studio/cliente/dashboard?barbeiro_id={barber.id}&data_agendamento={selected_day.isoformat()}",
             follow_redirects=True,
         )
         self.assertIn(b"14:30", visualizacao.data)
@@ -526,7 +572,7 @@ class AppRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         agenda_admin = self.client.get(
-            f"/t/nerzilus-studio/admin?barbeiro_id={barber.id}&day=2026-04-16",
+            f"/t/nerzilus-studio/admin?barbeiro_id={barber.id}&day={selected_day.isoformat()}",
             follow_redirects=True,
         )
         self.assertIn(b"14:30", agenda_admin.data)
@@ -572,6 +618,246 @@ class AppRoutesTestCase(unittest.TestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertIn(b"Tema da plataforma atualizado.", resposta.data)
         self.assertIn(b'data-theme="pink"', resposta.data)
+
+    def test_admin_upload_persists_hero_image_in_database(self):
+        self.client.post(
+            "/t/nerzilus-studio/admin/login",
+            data={"username": "sergioadmin", "senha": "admin123"},
+            follow_redirects=True,
+        )
+
+        image_bytes = b"fake-image-binary"
+        resposta = self.client.post(
+            "/t/nerzilus-studio/admin/cabecalho-imagem",
+            data={"hero_image": (BytesIO(image_bytes), "hero.png")},
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn("Imagem do cabecalho atualizada.".encode("utf-8"), resposta.data)
+        self.assertIn(b"/t/nerzilus-studio/hero-image", resposta.data)
+
+        with self.app.app_context():
+            from Nerzilus.models import Tenant
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            self.assertEqual(tenant.hero_image, f"tenant-{tenant.id}-hero.png")
+            self.assertEqual(tenant.hero_image_data, image_bytes)
+            self.assertEqual(tenant.hero_image_mimetype, "image/png")
+
+        hero_response = self.client.get("/t/nerzilus-studio/hero-image")
+        self.assertEqual(hero_response.status_code, 200)
+        self.assertEqual(hero_response.data, image_bytes)
+        self.assertEqual(hero_response.mimetype, "image/png")
+
+    def test_admin_dashboard_shows_today_week_revenue_and_total_clients(self):
+        booking_day = date.today()
+
+        self.client.post(
+            "/t/nerzilus-studio/cliente",
+            data={"nome": "Cliente Dashboard", "telefone": "11933334444"},
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus.models import Appointment, Barber, Service, Tenant, User
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            barber = Barber.query.filter_by(tenant_id=tenant.id).order_by(Barber.nome.asc()).first()
+            service = Service.query.filter_by(tenant_id=tenant.id, nome="Corte").first()
+            client = User.query.filter_by(tenant_id=tenant.id, telefone="11933334444", is_admin=False).first()
+
+            appointment = Appointment(
+                tenant_id=tenant.id,
+                cliente_id=client.id,
+                barbeiro_id=barber.id,
+                servico_id=service.id,
+                forma_pagamento="local",
+                data_agendamento=booking_day,
+                hora_agendamento=time(14, 0),
+                status="confirmado",
+            )
+            from Nerzilus import database
+            database.session.add(appointment)
+            database.session.commit()
+
+        self.client.get("/logout", follow_redirects=True)
+        self.login_admin()
+        resposta = self.client.get("/t/nerzilus-studio/admin", follow_redirects=True)
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn("Agendados hoje".encode("utf-8"), resposta.data)
+        self.assertIn("Faturamento do dia".encode("utf-8"), resposta.data)
+        self.assertIn("Faturamento da semana".encode("utf-8"), resposta.data)
+        self.assertIn("Historico completo do faturamento".encode("utf-8"), resposta.data)
+        self.assertIn("Faturamento do mes".encode("utf-8"), resposta.data)
+        self.assertIn("Exportar CSV".encode("utf-8"), resposta.data)
+        self.assertIn(b"R$ 35.00", resposta.data)
+        self.assertIn("total ja cadastrado no banco".encode("utf-8"), resposta.data)
+
+    def test_client_remains_in_database_after_appointment_is_removed(self):
+        booking_day = date.today() + timedelta(days=1)
+
+        self.client.post(
+            "/t/nerzilus-studio/cliente",
+            data={"nome": "Cliente Persistente", "telefone": "11977778888"},
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus.models import Barber, Service, Tenant
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            barber = Barber.query.filter_by(tenant_id=tenant.id).order_by(Barber.nome.asc()).first()
+            service = Service.query.filter_by(tenant_id=tenant.id).order_by(Service.valor.asc()).first()
+
+        with patch("Nerzilus.routes.send_booking_whatsapp_notification"):
+            self.client.post(
+                "/t/nerzilus-studio/cliente/dashboard",
+                data={
+                    "barbeiro_id": barber.id,
+                    "servico_id": service.id,
+                    "data_agendamento": booking_day.isoformat(),
+                    "hora_agendamento": "14:45",
+                },
+                follow_redirects=True,
+            )
+
+        self.client.get("/logout", follow_redirects=True)
+        self.client.post(
+            "/t/nerzilus-studio/admin/login",
+            data={"username": "sergioadmin", "senha": "admin123"},
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus.models import Appointment
+
+            appointment = Appointment.query.first()
+            appointment_id = appointment.id
+
+        self.client.post(
+            f"/t/nerzilus-studio/admin/agendamentos/{appointment_id}/excluir",
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus.models import Tenant, User
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            client = User.query.filter_by(tenant_id=tenant.id, telefone="11977778888", is_admin=False).first()
+            self.assertIsNotNone(client)
+            self.assertEqual(client.nome, "Cliente Persistente")
+
+    def test_revenue_history_remains_after_appointment_is_removed(self):
+        booking_day = date.today() + timedelta(days=1)
+
+        self.client.post(
+            "/t/nerzilus-studio/cliente",
+            data={"nome": "Cliente Historico", "telefone": "11956565656"},
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus.models import Barber, Service, Tenant
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            barber = Barber.query.filter_by(tenant_id=tenant.id).order_by(Barber.nome.asc()).first()
+            service = Service.query.filter_by(tenant_id=tenant.id, nome="Corte").first()
+
+        with patch("Nerzilus.routes.send_booking_whatsapp_notification"):
+            self.client.post(
+                "/t/nerzilus-studio/cliente/dashboard",
+                data={
+                    "barbeiro_id": barber.id,
+                    "servico_id": service.id,
+                    "data_agendamento": booking_day.isoformat(),
+                    "hora_agendamento": "15:30",
+                },
+                follow_redirects=True,
+            )
+
+        self.client.get("/logout", follow_redirects=True)
+        self.login_admin()
+
+        with self.app.app_context():
+            from Nerzilus.models import Appointment, RevenueRecord
+
+            appointment = Appointment.query.first()
+            revenue = RevenueRecord.query.filter_by(appointment_id=appointment.id).first()
+            appointment_id = appointment.id
+            revenue_id = revenue.id
+
+        self.client.post(
+            f"/t/nerzilus-studio/admin/agendamentos/{appointment_id}/excluir",
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus import database
+            from Nerzilus.models import Appointment, RevenueRecord
+
+            revenue = database.session.get(RevenueRecord, revenue_id)
+            self.assertIsNone(Appointment.query.filter_by(id=appointment_id).first())
+            self.assertIsNotNone(revenue)
+            self.assertIsNone(revenue.appointment_id)
+            self.assertEqual(revenue.status, "excluido")
+
+    def test_admin_can_filter_and_export_revenue_history(self):
+        with self.app.app_context():
+            from Nerzilus import database
+            from Nerzilus.models import RevenueRecord, Tenant
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            database.session.add(
+                RevenueRecord(
+                    tenant_id=tenant.id,
+                    cliente_nome="Cliente CSV 1",
+                    barbeiro_nome="Barbeiro Modelo",
+                    servico_nome="Corte",
+                    valor=35,
+                    forma_pagamento="local",
+                    data_referencia=date.today(),
+                    status="confirmado",
+                    origem="agendamento",
+                )
+            )
+            database.session.add(
+                RevenueRecord(
+                    tenant_id=tenant.id,
+                    cliente_nome="Cliente CSV 2",
+                    barbeiro_nome="Barbeiro Modelo",
+                    servico_nome="Barba",
+                    valor=25,
+                    forma_pagamento="pix",
+                    data_referencia=date.today() - timedelta(days=15),
+                    status="cancelado",
+                    origem="agendamento",
+                )
+            )
+            database.session.commit()
+
+        self.login_admin()
+        resposta = self.client.get(
+            "/t/nerzilus-studio/admin?billing_period=today&billing_status=confirmado",
+            follow_redirects=True,
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn(b"Cliente CSV 1", resposta.data)
+        self.assertNotIn(b"Cliente CSV 2", resposta.data)
+
+        exportacao = self.client.get(
+            "/t/nerzilus-studio/admin/faturamentos/exportar?billing_period=today&billing_status=confirmado",
+            follow_redirects=True,
+        )
+        conteudo = exportacao.get_data(as_text=True)
+
+        self.assertEqual(exportacao.status_code, 200)
+        self.assertIn("text/csv", exportacao.headers["Content-Type"])
+        self.assertIn("Cliente CSV 1", conteudo)
+        self.assertNotIn("Cliente CSV 2", conteudo)
 
     def test_tenant_isolation_blocks_cross_access(self):
         self.client.post(

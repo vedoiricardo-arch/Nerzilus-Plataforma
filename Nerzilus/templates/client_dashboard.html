@@ -34,53 +34,6 @@
         <div class="booking-section-head">
           <span class="booking-step-index">01</span>
           <div>
-            <h2 class="section-title">Barbeiro</h2>
-            <p class="subtitle">Escolha primeiro quem vai realizar o atendimento.</p>
-          </div>
-        </div>
-        <div class="booking-barber-grid">
-          {% for value, label in form.barbeiro_id.choices %}
-            <label class="list-item booking-option-card">
-              <input
-                type="radio"
-                name="{{ form.barbeiro_id.name }}"
-                value="{{ value }}"
-                {% if form.barbeiro_id.data == value %}checked{% endif %}
-              />
-              <div class="barber-avatar" aria-hidden="true">{{ label[:1] }}</div>
-              <strong>{{ label }}</strong>
-            </label>
-          {% endfor %}
-        </div>
-        {% for erro in form.barbeiro_id.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
-      </section>
-
-      <section class="booking-section">
-        <div class="booking-section-head">
-          <span class="booking-step-index">02</span>
-          <div>
-            <h2 class="section-title">Servico</h2>
-            <p class="subtitle">Selecione o servico desejado.</p>
-          </div>
-        </div>
-        <div class="service-grid">
-          {% for servico in services %}
-            <label class="service-card booking-option-card">
-              <input type="radio" name="{{ form.servico_id.name }}" value="{{ servico.id }}" {% if form.servico_id.data == servico.id %}checked{% endif %} />
-              <span class="service-icon">{{ servico.icone }}</span>
-              <strong>{{ servico.nome }}</strong>
-              <span>R$ {{ "%.2f"|format(servico.valor) }}</span>
-              <span>{{ servico.duracao_minutos }} min</span>
-            </label>
-          {% endfor %}
-        </div>
-        {% for erro in form.servico_id.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
-      </section>
-
-      <section class="booking-section">
-        <div class="booking-section-head">
-          <span class="booking-step-index">03</span>
-          <div>
             <h2 class="section-title">Data e hora</h2>
             <p class="subtitle">Escolha o dia e selecione um slot de 45 minutos.</p>
           </div>
@@ -136,6 +89,53 @@
           {% endfor %}
         </div>
         {% for erro in form.hora_agendamento.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+      </section>
+
+      <section class="booking-section">
+        <div class="booking-section-head">
+          <span class="booking-step-index">02</span>
+          <div>
+            <h2 class="section-title">Servico</h2>
+            <p class="subtitle">Selecione o servico desejado.</p>
+          </div>
+        </div>
+        <div class="service-grid">
+          {% for servico in services %}
+            <label class="service-card booking-option-card">
+              <input type="radio" name="{{ form.servico_id.name }}" value="{{ servico.id }}" {% if form.servico_id.data == servico.id %}checked{% endif %} />
+              <span class="service-icon">{{ servico.icone }}</span>
+              <strong>{{ servico.nome }}</strong>
+              <span>R$ {{ "%.2f"|format(servico.valor) }}</span>
+              <span>{{ servico.duracao_minutos }} min</span>
+            </label>
+          {% endfor %}
+        </div>
+        {% for erro in form.servico_id.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
+      </section>
+
+      <section class="booking-section">
+        <div class="booking-section-head">
+          <span class="booking-step-index">03</span>
+          <div>
+            <h2 class="section-title">Barbeiro</h2>
+            <p class="subtitle">Por ultimo, escolha quem vai realizar o atendimento.</p>
+          </div>
+        </div>
+        <div class="booking-barber-grid">
+          {% for value, label in form.barbeiro_id.choices %}
+            <label class="list-item booking-option-card">
+              <input
+                type="radio"
+                name="{{ form.barbeiro_id.name }}"
+                value="{{ value }}"
+                {% if form.barbeiro_id.data == value %}checked{% endif %}
+              />
+              <div class="barber-avatar" aria-hidden="true">{{ label[:1] }}</div>
+              <strong>{{ label }}</strong>
+            </label>
+          {% endfor %}
+        </div>
+        {% for erro in form.barbeiro_id.errors %}<p class="texto-erro">{{ erro }}</p>{% endfor %}
       </section>
 
       {{ form.botao_confirmacao(class="button button-primary submit-button") }}

@@ -120,7 +120,7 @@ python criar_banco.py
 ## Observacoes
 
 - O app usa `ProxyFix` para funcionar atras de proxy reverso.
-- Upload de imagem continua em disco local; para alta disponibilidade, use storage externo.
+- Imagens de cabecalho passam a ser persistidas no banco; o diretório local segue apenas para compatibilidade e migracao.
 - A ativacao da assinatura depende do webhook, nao do redirect visual.
 - A chave Pix `51993338005` precisa estar configurada e validada na conta do gateway para o repasse oficial.
 

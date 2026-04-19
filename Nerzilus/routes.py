@@ -1,8 +1,11 @@
+import csv
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 from functools import wraps
+from io import BytesIO, StringIO
 from pathlib import Path
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, current_app, flash, redirect, render_template, request, send_file, url_for
 from flask import session
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import text
@@ -45,7 +48,17 @@ from Nerzilus.forms import (
     TenantThemeForm,
     TenantWhatsAppForm,
 )
-from Nerzilus.models import Appointment, Barber, BarberUnavailableSlot, PaymentEventLog, Service, Subscription, Tenant, User
+from Nerzilus.models import (
+    Appointment,
+    Barber,
+    BarberUnavailableSlot,
+    PaymentEventLog,
+    RevenueRecord,
+    Service,
+    Subscription,
+    Tenant,
+    User,
+)
 from Nerzilus.notifications import (
     build_whatsapp_link,
     format_phone_display,
@@ -107,6 +120,8 @@ def get_tenant_or_404(tenant_slug):
 
 
 def tenant_hero_image_url(tenant):
+    if tenant.hero_image_data:
+        return url_for("main.hero_image_content", tenant_slug=tenant.slug)
     if tenant.hero_image:
         return url_for("static", filename=f"fotos_posts/{tenant.hero_image}")
     return DEFAULT_HERO_IMAGE_URL
@@ -339,6 +354,125 @@ def build_week_schedule(appointments, week_start):
             }
         )
     return days, columns
+
+
+def calculate_revenue_totals(appointments):
+    total = Decimal("0.00")
+    for appointment in appointments:
+        if appointment.status == "cancelado":
+            continue
+        total += appointment.servico_rel.valor or Decimal("0.00")
+    return total
+
+
+def calculate_revenue_from_records(records):
+    total = Decimal("0.00")
+    for record in records:
+        if record.status != "confirmado":
+            continue
+        total += record.valor or Decimal("0.00")
+    return total
+
+
+def create_or_update_revenue_record(appointment):
+    service_value = appointment.servico_rel.valor or Decimal("0.00")
+    record = RevenueRecord.query.filter_by(appointment_id=appointment.id).first()
+    if record is None:
+        record = RevenueRecord(
+            tenant_id=appointment.tenant_id,
+            appointment_id=appointment.id,
+            cliente_id=appointment.cliente_id,
+            cliente_nome=appointment.cliente.nome,
+            barbeiro_nome=appointment.barbeiro_rel.nome,
+            servico_nome=appointment.servico_rel.nome,
+            valor=service_value,
+            forma_pagamento=appointment.forma_pagamento,
+            data_referencia=appointment.data_agendamento,
+            hora_referencia=appointment.hora_agendamento,
+            status=appointment.status,
+            origem="agendamento",
+        )
+        database.session.add(record)
+        return record
+
+    record.status = appointment.status
+    return record
+
+
+def backfill_revenue_history(tenant_id):
+    appointments = (
+        Appointment.query.filter_by(tenant_id=tenant_id)
+        .order_by(Appointment.data_agendamento.asc(), Appointment.hora_agendamento.asc())
+        .all()
+    )
+    has_changes = False
+    for appointment in appointments:
+        if appointment.faturamento is None:
+            create_or_update_revenue_record(appointment)
+            has_changes = True
+    if has_changes:
+        database.session.commit()
+
+
+def parse_optional_date(raw_value):
+    if not raw_value:
+        return None
+    try:
+        return datetime.strptime(raw_value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def resolve_revenue_filters():
+    today = date.today()
+    period = request.args.get("billing_period", "all")
+    status = request.args.get("billing_status", "all")
+    start_date = parse_optional_date(request.args.get("billing_start"))
+    end_date = parse_optional_date(request.args.get("billing_end"))
+
+    if period == "today":
+        start_date = today
+        end_date = today
+    elif period == "week":
+        start_date = today - timedelta(days=today.weekday())
+        end_date = start_date + timedelta(days=6)
+    elif period == "month":
+        start_date = today.replace(day=1)
+        if start_date.month == 12:
+            end_date = start_date.replace(year=start_date.year + 1, month=1) - timedelta(days=1)
+        else:
+            end_date = start_date.replace(month=start_date.month + 1) - timedelta(days=1)
+    elif period != "custom":
+        start_date = None
+        end_date = None
+
+    if start_date and end_date and start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    return {
+        "period": period if period in {"all", "today", "week", "month", "custom"} else "all",
+        "status": status if status in {"all", "confirmado", "cancelado", "excluido"} else "all",
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+
+
+def build_revenue_query(tenant_id, filters):
+    query = RevenueRecord.query.filter_by(tenant_id=tenant_id)
+    if filters["status"] != "all":
+        query = query.filter(RevenueRecord.status == filters["status"])
+    if filters["start_date"] is not None:
+        query = query.filter(RevenueRecord.data_referencia >= filters["start_date"])
+    if filters["end_date"] is not None:
+        query = query.filter(RevenueRecord.data_referencia <= filters["end_date"])
+    return query
+
+
+def calculate_average_ticket(records):
+    confirmed_records = [item for item in records if item.status == "confirmado"]
+    if not confirmed_records:
+        return Decimal("0.00")
+    return calculate_revenue_from_records(confirmed_records) / Decimal(len(confirmed_records))
 
 
 @main_bp.route("/", methods=["GET", "POST"])
@@ -758,6 +892,8 @@ def dashboard_cliente(tenant):
             status="confirmado",
         )
         database.session.add(agendamento)
+        database.session.flush()
+        create_or_update_revenue_record(agendamento)
         database.session.commit()
         notification = send_booking_whatsapp_notification(agendamento)
         direct_link = getattr(notification, "direct_link", None)
@@ -797,6 +933,7 @@ def cancelar_agendamento_cliente(tenant, appointment_id):
         abort(403)
 
     agendamento.status = "cancelado"
+    create_or_update_revenue_record(agendamento)
     database.session.commit()
     flash("Agendamento cancelado.", "success")
     return redirect(url_for("main.dashboard_cliente", tenant_slug=tenant.slug))
@@ -808,6 +945,7 @@ def cancelar_agendamento_cliente(tenant, appointment_id):
 @admin_required
 @subscription_required
 def admin_dashboard(tenant):
+    backfill_revenue_history(tenant.id)
     barbeiro_form = BarberForm()
     service_form = ServiceForm()
     slot_form = SlotAvailabilityForm()
@@ -823,6 +961,39 @@ def admin_dashboard(tenant):
         .order_by(Appointment.data_agendamento.asc(), Appointment.hora_agendamento.asc())
         .all()
     )
+    revenue_filters = resolve_revenue_filters()
+    faturamentos = (
+        build_revenue_query(tenant.id, revenue_filters)
+        .order_by(RevenueRecord.data_referencia.desc(), RevenueRecord.hora_referencia.desc(), RevenueRecord.id.desc())
+        .all()
+    )
+    faturamentos_historico = (
+        RevenueRecord.query.filter_by(tenant_id=tenant.id)
+        .order_by(RevenueRecord.data_referencia.desc(), RevenueRecord.hora_referencia.desc(), RevenueRecord.id.desc())
+        .all()
+    )
+    today = date.today()
+    current_week_start = today - timedelta(days=today.weekday())
+    current_week_end = current_week_start + timedelta(days=6)
+    today_appointments = [item for item in agendamentos if item.data_agendamento == today and item.status != "cancelado"]
+    current_week_appointments = [
+        item
+        for item in agendamentos
+        if current_week_start <= item.data_agendamento <= current_week_end and item.status != "cancelado"
+    ]
+    faturamentos_hoje = [item for item in faturamentos_historico if item.data_referencia == today]
+    faturamentos_semana = [
+        item for item in faturamentos_historico if current_week_start <= item.data_referencia <= current_week_end
+    ]
+    current_month_start = today.replace(day=1)
+    if current_month_start.month == 12:
+        current_month_end = current_month_start.replace(year=current_month_start.year + 1, month=1) - timedelta(days=1)
+    else:
+        current_month_end = current_month_start.replace(month=current_month_start.month + 1) - timedelta(days=1)
+    faturamentos_mes = [
+        item for item in faturamentos_historico if current_month_start <= item.data_referencia <= current_month_end
+    ]
+    total_clients = sum(1 for usuario in usuarios if not usuario.is_admin)
     selected_day_raw = request.args.get("day")
     selected_barber_id = request.args.get("barbeiro_id", type=int)
     try:
@@ -864,7 +1035,17 @@ def admin_dashboard(tenant):
         barbeiros=barbeiros,
         active_barber=active_barber,
         servicos=servicos,
+        appointments_today_count=len(today_appointments),
+        revenue_today=calculate_revenue_from_records(faturamentos_hoje),
+        revenue_week=calculate_revenue_from_records(faturamentos_semana),
+        total_clients=total_clients,
         agendamentos=agendamentos,
+        faturamentos=faturamentos,
+        billing_filters=revenue_filters,
+        revenue_month=calculate_revenue_from_records(faturamentos_mes),
+        revenue_total=calculate_revenue_from_records(faturamentos_historico),
+        revenue_filtered_total=calculate_revenue_from_records(faturamentos),
+        revenue_average_ticket=calculate_average_ticket(faturamentos),
         selected_day=selected_day,
         selected_barber_id=selected_barber_id,
         day_schedule=build_day_schedule(
@@ -883,6 +1064,49 @@ def admin_dashboard(tenant):
         hero_image_url=tenant_hero_image_url(tenant),
         tenant_whatsapp_link=build_whatsapp_link(tenant.whatsapp),
         client_booking_url=url_for("main.acesso_cliente", tenant_slug=tenant.slug, _external=True),
+    )
+
+
+@main_bp.route("/t/<tenant_slug>/admin/faturamentos/exportar")
+@login_required
+@tenant_member_required
+@admin_required
+@subscription_required
+def exportar_faturamentos(tenant):
+    backfill_revenue_history(tenant.id)
+    revenue_filters = resolve_revenue_filters()
+    faturamentos = (
+        build_revenue_query(tenant.id, revenue_filters)
+        .order_by(RevenueRecord.data_referencia.desc(), RevenueRecord.hora_referencia.desc(), RevenueRecord.id.desc())
+        .all()
+    )
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["data", "hora", "cliente", "barbeiro", "servico", "pagamento", "status", "valor", "origem"])
+    for faturamento in faturamentos:
+        writer.writerow(
+            [
+                faturamento.data_referencia.isoformat(),
+                faturamento.hora_referencia.strftime("%H:%M") if faturamento.hora_referencia else "",
+                faturamento.cliente_nome,
+                faturamento.barbeiro_nome,
+                faturamento.servico_nome,
+                faturamento.forma_pagamento,
+                faturamento.status,
+                f"{faturamento.valor:.2f}",
+                faturamento.origem,
+            ]
+        )
+
+    csv_content = output.getvalue()
+    output.close()
+    return Response(
+        csv_content,
+        mimetype="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="faturamentos-{tenant.slug}.csv"',
+        },
     )
 
 
@@ -952,11 +1176,46 @@ def atualizar_imagem_cabecalho(tenant):
         if previous_file.exists():
             previous_file.unlink()
 
-    image_file.save(upload_dir / final_name)
+    image_bytes = image_file.read()
+    if not image_bytes:
+        flash("Nao foi possivel ler a imagem enviada.", "error")
+        return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+
+    (upload_dir / final_name).write_bytes(image_bytes)
     tenant.hero_image = final_name
+    tenant.hero_image_data = image_bytes
+    tenant.hero_image_mimetype = image_file.mimetype or {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    }.get(extension, "application/octet-stream")
     database.session.commit()
     flash("Imagem do cabecalho atualizada.", "success")
     return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+
+
+@main_bp.route("/t/<tenant_slug>/hero-image")
+def hero_image_content(tenant_slug):
+    tenant = get_tenant_or_404(tenant_slug)
+    if tenant.hero_image_data:
+        return send_file(
+            BytesIO(tenant.hero_image_data),
+            mimetype=tenant.hero_image_mimetype or "application/octet-stream",
+            download_name=tenant.hero_image or f"tenant-{tenant.id}-hero",
+            max_age=86400,
+        )
+
+    if tenant.hero_image:
+        legacy_path = Path(current_app.config["UPLOAD_FOLDER"]) / tenant.hero_image
+        if legacy_path.exists():
+            return send_file(
+                legacy_path,
+                mimetype=tenant.hero_image_mimetype or "application/octet-stream",
+                max_age=86400,
+            )
+
+    return Response(status=404)
 
 
 @main_bp.route("/t/<tenant_slug>/admin/barbeiros/novo", methods=["POST"])
@@ -1103,6 +1362,7 @@ def atualizar_status_agendamento(tenant, appointment_id):
     form = AppointmentStatusForm()
     if form.validate_on_submit():
         agendamento.status = form.status.data
+        create_or_update_revenue_record(agendamento)
         database.session.commit()
         flash("Status atualizado.", "success")
     else:
@@ -1117,6 +1377,10 @@ def atualizar_status_agendamento(tenant, appointment_id):
 @subscription_required
 def excluir_agendamento(tenant, appointment_id):
     agendamento = Appointment.query.filter_by(id=appointment_id, tenant_id=tenant.id).first_or_404()
+    faturamento = RevenueRecord.query.filter_by(appointment_id=agendamento.id).first()
+    if faturamento is not None:
+        faturamento.status = "excluido"
+        faturamento.appointment_id = None
     database.session.delete(agendamento)
     database.session.commit()
     flash("Agendamento excluido.", "success")

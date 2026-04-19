@@ -29,6 +29,14 @@
   --success-bg: rgba(93, 164, 116, 0.14);
   --danger-text: #ffb0a3;
   --danger-bg: rgba(200, 95, 80, 0.14);
+  --hero-overlay-start: rgba(8, 8, 8, 0.72);
+  --hero-overlay-mid: rgba(8, 8, 8, 0.48);
+  --hero-overlay-soft: rgba(8, 8, 8, 0.08);
+  --hero-overlay-end: rgba(8, 8, 8, 0.02);
+  --hero-foreground: #fffaf2;
+  --summary-card-bg: color-mix(in srgb, var(--panel) 94%, transparent);
+  --summary-card-text: #fffaf2;
+  --summary-card-muted: rgba(248, 244, 235, 0.82);
 }
 
 :root[data-theme="light"] {
@@ -62,6 +70,14 @@
   --success-bg: rgba(93, 164, 116, 0.16);
   --danger-text: #8b352c;
   --danger-bg: rgba(181, 90, 79, 0.14);
+  --hero-overlay-start: rgba(59, 44, 18, 0.58);
+  --hero-overlay-mid: rgba(59, 44, 18, 0.38);
+  --hero-overlay-soft: rgba(59, 44, 18, 0.14);
+  --hero-overlay-end: rgba(59, 44, 18, 0.08);
+  --hero-foreground: #fffaf2;
+  --summary-card-bg: rgba(255, 250, 245, 0.95);
+  --summary-card-text: #34281d;
+  --summary-card-muted: #6d5c48;
 }
 
 :root[data-theme="pink"] {
@@ -95,6 +111,14 @@
   --success-bg: rgba(93, 164, 116, 0.14);
   --danger-text: #8f3144;
   --danger-bg: rgba(185, 79, 93, 0.14);
+  --hero-overlay-start: rgba(82, 35, 57, 0.54);
+  --hero-overlay-mid: rgba(82, 35, 57, 0.34);
+  --hero-overlay-soft: rgba(82, 35, 57, 0.15);
+  --hero-overlay-end: rgba(82, 35, 57, 0.08);
+  --hero-foreground: #fff8fb;
+  --summary-card-bg: rgba(255, 249, 252, 0.95);
+  --summary-card-text: #4b2436;
+  --summary-card-muted: #7a5867;
 }
 
 * {
@@ -111,6 +135,7 @@ body {
     linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
   color: var(--text);
   font-family: Georgia, "Times New Roman", serif;
+  overflow-x: hidden;
 }
 
 a {
@@ -122,6 +147,7 @@ a {
   width: min(100%, 1120px);
   margin: 0 auto;
   padding: 24px 16px 64px;
+  overflow-x: clip;
 }
 
 .panel,
@@ -132,6 +158,7 @@ a {
   border: 1px solid var(--white-line);
   border-radius: 28px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+  min-width: 0;
 }
 
 .panel,
@@ -562,6 +589,251 @@ h2.section-title {
   min-height: 320px;
   background: var(--hero-stage);
   border-color: var(--line);
+  padding: 26px;
+}
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 42%),
+    var(--panel);
+}
+
+.admin-sidebar-brand,
+.admin-sidebar-actions,
+.admin-content-stack,
+.admin-sidebar-nav {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-sidebar-title {
+  font-size: 1.7rem;
+  line-height: 0.95;
+}
+
+.admin-nav-button {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--white-line);
+  background: var(--surface-soft);
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  font-size: 0.96rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.admin-nav-button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 36%, transparent);
+}
+
+.admin-nav-button.is-active {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 24%, transparent), var(--surface-soft));
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
+}
+
+.admin-mobile-nav,
+.admin-mobile-topbar {
+  display: none;
+}
+
+.admin-mobile-menu-button,
+.admin-mobile-drawer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--text);
+  border-radius: 14px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-mobile-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 58px;
+  display: none;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  z-index: 36;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  border-bottom: 1px solid var(--white-line);
+  backdrop-filter: blur(14px);
+}
+
+.admin-mobile-menu-button {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 12px;
+}
+
+.admin-mobile-topbar-title {
+  font-size: 0.98rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-mobile-topbar-spacer {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+}
+
+.admin-mobile-drawer {
+  display: none;
+}
+
+.admin-mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.admin-mobile-drawer-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(82vw, 320px);
+  height: 100vh;
+  border-radius: 0 26px 26px 0;
+  padding: 12px 12px 14px;
+  display: grid;
+  gap: 0;
+  z-index: 41;
+}
+
+.admin-mobile-drawer-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-mobile-drawer-nav .admin-nav-button {
+  min-height: 42px;
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  border-radius: 14px;
+}
+
+.admin-mobile-drawer-actions {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.admin-mobile-drawer-actions .button,
+.admin-mobile-drawer-actions .link-button {
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  justify-content: center;
+}
+
+.admin-mobile-drawer-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+  z-index: 1;
+}
+
+.admin-mobile-drawer.is-open {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.admin-section {
+  display: none;
+}
+
+.admin-section.is-active {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-summary-grid-hero {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  align-items: stretch;
+}
+
+.admin-summary-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px 18px 16px;
+  min-height: 154px;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 64%),
+    var(--summary-card-bg);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+  align-content: start;
+}
+
+.admin-summary-card strong {
+  display: block;
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  line-height: 0.88;
+  letter-spacing: -0.04em;
+  color: var(--summary-card-text);
+  word-break: break-word;
+}
+
+.admin-summary-card .eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  line-height: 1.35;
+}
+
+.admin-summary-card .muted {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  max-width: 20ch;
+  color: var(--summary-card-muted);
 }
 
 .admin-hero-photo {
@@ -578,20 +850,28 @@ h2.section-title {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(8, 8, 8, 0.72) 0%, rgba(8, 8, 8, 0.48) 38%, rgba(8, 8, 8, 0.08) 72%, rgba(8, 8, 8, 0.02) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--hero-overlay-start) 0%,
+    var(--hero-overlay-mid) 38%,
+    var(--hero-overlay-soft) 72%,
+    var(--hero-overlay-end) 100%
+  );
   pointer-events: none;
 }
 
 .admin-hero-content {
   position: relative;
   z-index: 1;
-  color: #fffaf2;
+  color: var(--hero-foreground);
+  width: 100%;
 }
 
 .admin-hero-stack {
   display: grid;
   justify-items: start;
-  gap: 12px;
+  gap: 16px;
+  width: 100%;
 }
 
 .admin-brand-title {
@@ -612,6 +892,99 @@ h2.section-title {
 .agenda-layout {
   display: grid;
   gap: 16px;
+}
+
+.faturamento-history {
+  display: grid;
+  gap: 12px;
+}
+
+.faturamento-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.faturamento-filter-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.faturamento-filter-actions .button {
+  min-width: 148px;
+  justify-content: center;
+}
+
+.faturamento-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.faturamento-summary-card {
+  min-height: 138px;
+}
+
+.faturamento-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 72%),
+    var(--surface-strong);
+}
+
+.faturamento-card-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.faturamento-card-main strong {
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  line-height: 1;
+}
+
+.faturamento-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+  color: var(--muted);
+}
+
+.faturamento-meta span {
+  min-width: 0;
+  word-break: break-word;
+}
+
+.faturamento-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.faturamento-status.status-confirmado {
+  border-color: rgba(72, 187, 120, 0.38);
+  background: rgba(72, 187, 120, 0.12);
+}
+
+.faturamento-status.status-cancelado,
+.faturamento-status.status-excluido {
+  border-color: rgba(245, 101, 101, 0.38);
+  background: rgba(245, 101, 101, 0.12);
 }
 
 .agenda-block {
@@ -688,6 +1061,7 @@ h2.section-title {
 .booking-slot-card span {
   font-size: 0.82rem;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .agenda-cell.has-appointment,
@@ -849,9 +1223,9 @@ h2.section-title {
 
 .admin-hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  gap: 16px;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
   position: relative;
   z-index: 1;
   min-height: 256px;
@@ -860,10 +1234,10 @@ h2.section-title {
 .admin-contact-card {
   border-radius: 20px;
   border: 1px solid var(--white-line);
-  background: var(--surface-panel);
+  background: color-mix(in srgb, var(--surface-panel) 96%, transparent);
   padding: 16px;
   align-self: end;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(12px);
 }
 
 .admin-hero-toolbar {
@@ -891,7 +1265,7 @@ h2.section-title {
   align-items: center;
   padding: 6px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-panel) 92%, transparent);
+  background: color-mix(in srgb, var(--surface-panel) 98%, transparent);
   border: 1px solid var(--white-line);
   backdrop-filter: blur(8px);
 }
@@ -963,10 +1337,50 @@ h2.section-title {
   line-height: 1.45;
 }
 
-.admin-whatsapp-card {
-  margin-top: auto;
-  justify-self: end;
-  width: min(100%, 360px);
+.admin-floating-whatsapp {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 30;
+}
+
+.admin-whatsapp-fab-details {
+  position: relative;
+}
+
+.admin-whatsapp-fab-toggle {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  cursor: pointer;
+  list-style: none;
+  background: rgba(9, 9, 9, 0.92);
+  border: 1px solid rgba(37, 211, 102, 0.35);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.admin-whatsapp-fab-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.admin-whatsapp-fab-panel {
+  position: absolute;
+  right: 0;
+  bottom: 72px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px solid var(--white-line);
+  background: color-mix(in srgb, var(--panel) 95%, transparent);
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(14px);
+}
+
+.admin-whatsapp-fab-details:not([open]) .admin-whatsapp-fab-panel {
+  display: none;
 }
 
 .admin-whatsapp-details {
@@ -1204,6 +1618,7 @@ h2.section-title {
 }
 
 @media (max-width: 699px) {
+  .admin-shell,
   .landing-actions,
   .list-stack,
   .grid-two,
@@ -1214,6 +1629,60 @@ h2.section-title {
   .booking-barber-grid,
   .agenda-layout {
     grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    display: none;
+  }
+
+  .admin-mobile-drawer {
+    display: none;
+  }
+
+  .admin-mobile-nav {
+    display: none;
+  }
+
+  .admin-mobile-topbar {
+    display: grid;
+  }
+
+  .admin-mobile-drawer-panel {
+    padding-top: 56px;
+  }
+
+  .app-shell {
+    padding-top: 70px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .panel,
+  .landing-frame {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .admin-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-summary-grid-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .faturamento-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .faturamento-filter-bar,
+  .faturamento-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .faturamento-filter-actions .button {
+    min-width: 0;
+    width: 100%;
   }
 
   .admin-hero-grid {
@@ -1234,11 +1703,19 @@ h2.section-title {
 
   .admin-hero {
     min-height: 400px;
-    padding-top: 64px;
+    padding-top: 18px;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 16px;
   }
 
   .admin-hero::after {
-    background: linear-gradient(180deg, rgba(8, 8, 8, 0.42) 0%, rgba(8, 8, 8, 0.62) 55%, rgba(8, 8, 8, 0.72) 100%);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--hero-overlay-soft) 100%, transparent) 0%,
+      color-mix(in srgb, var(--hero-overlay-mid) 100%, transparent) 55%,
+      color-mix(in srgb, var(--hero-overlay-start) 100%, transparent) 100%
+    );
   }
 
   .admin-brand-title {
@@ -1247,7 +1724,23 @@ h2.section-title {
   }
 
   .admin-hero-content {
-    padding-top: 8px;
+    padding-top: 0;
+  }
+
+  .admin-summary-card {
+    min-height: auto;
+    padding: 16px;
+    gap: 8px;
+  }
+
+  .admin-summary-card strong {
+    font-size: 2rem;
+    line-height: 0.92;
+  }
+
+  .admin-summary-card .muted {
+    max-width: none;
+    font-size: 0.82rem;
   }
 
   .admin-whatsapp-card {
@@ -1255,6 +1748,23 @@ h2.section-title {
     width: auto;
     padding: 8px 10px;
     background: color-mix(in srgb, var(--surface-panel) 82%, transparent);
+  }
+
+  .admin-floating-whatsapp {
+    right: 14px;
+    bottom: 14px;
+  }
+
+  .admin-whatsapp-fab-toggle {
+    width: 52px;
+    height: 52px;
+  }
+
+  .admin-whatsapp-fab-panel {
+    width: min(280px, calc(100vw - 28px));
+    right: -2px;
+    bottom: 64px;
+    padding: 12px;
   }
 
   .admin-whatsapp-summary-text {
@@ -1352,6 +1862,13 @@ h2.section-title {
     gap: 8px;
   }
 
+  .agenda-week-card,
+  .agenda-cell,
+  .admin-summary-card,
+  .list-item {
+    min-width: 0;
+  }
+
   .working-hours-head,
   .working-hours-row {
     grid-template-columns: 52px repeat(7, minmax(48px, 1fr));
@@ -1411,6 +1928,16 @@ h2.section-title {
 
   .landing-frame {
     padding-top: 20px;
+  }
+
+  .top-row > *,
+  .admin-hero-content,
+  .admin-content-stack,
+  .admin-section,
+  .agenda-block,
+  .admin-whatsapp-form,
+  .field {
+    min-width: 0;
   }
 
   .theme-icon-group {

@@ -25,6 +25,8 @@ class Tenant(database.Model):
     tema = database.Column(database.String(20), nullable=False, default="dark")
     cor_primaria = database.Column(database.String(20), nullable=False, default="#d4a373")
     hero_image = database.Column(database.String(255), nullable=True)
+    hero_image_data = database.Column(database.LargeBinary, nullable=True)
+    hero_image_mimetype = database.Column(database.String(120), nullable=True)
     whatsapp = database.Column(database.String(30), nullable=True)
     notificacoes_whatsapp = database.Column(database.Boolean, nullable=False, default=False)
     stripe_customer_id = database.Column(database.String(120), nullable=True, unique=True)
@@ -35,6 +37,7 @@ class Tenant(database.Model):
     barbeiros = database.relationship("Barber", backref="tenant", lazy=True)
     servicos = database.relationship("Service", backref="tenant", lazy=True)
     agendamentos = database.relationship("Appointment", backref="tenant", lazy=True)
+    faturamentos = database.relationship("RevenueRecord", backref="tenant", lazy=True)
     assinaturas = database.relationship("Subscription", backref="tenant", lazy=True)
     usos = database.relationship("UsageRecord", backref="tenant", lazy=True)
     eventos_pagamento = database.relationship("PaymentEventLog", backref="tenant", lazy=True)
@@ -58,6 +61,7 @@ class User(database.Model, UserMixin):
     is_admin = database.Column(database.Boolean, nullable=False, default=False)
     criado_em = database.Column(database.DateTime, nullable=False, default=utcnow)
     agendamentos = database.relationship("Appointment", backref="cliente", lazy=True)
+    faturamentos = database.relationship("RevenueRecord", backref="cliente_rel", lazy=True)
     assinaturas = database.relationship("Subscription", backref="user", lazy=True)
     usos = database.relationship("UsageRecord", backref="user", lazy=True)
     eventos_pagamento = database.relationship("PaymentEventLog", backref="user", lazy=True)
@@ -109,6 +113,7 @@ class Appointment(database.Model):
     hora_agendamento = database.Column(database.Time, nullable=False)
     status = database.Column(database.String(30), nullable=False, default="pendente")
     criado_em = database.Column(database.DateTime, nullable=False, default=utcnow)
+    faturamento = database.relationship("RevenueRecord", backref="agendamento_rel", lazy=True, uselist=False)
 
     @property
     def inicio(self):
@@ -117,6 +122,28 @@ class Appointment(database.Model):
     @property
     def fim(self):
         return self.inicio + timedelta(minutes=self.servico_rel.duracao_minutos)
+
+
+class RevenueRecord(database.Model):
+    __table_args__ = (
+        database.Index("ix_revenue_record_tenant_data", "tenant_id", "data_referencia"),
+    )
+
+    id = database.Column(database.Integer, primary_key=True)
+    tenant_id = database.Column(database.Integer, database.ForeignKey("tenant.id"), nullable=False, index=True)
+    appointment_id = database.Column(database.Integer, database.ForeignKey("appointment.id"), nullable=True, unique=True)
+    cliente_id = database.Column(database.Integer, database.ForeignKey("user.id"), nullable=True, index=True)
+    cliente_nome = database.Column(database.String(120), nullable=False)
+    barbeiro_nome = database.Column(database.String(120), nullable=False)
+    servico_nome = database.Column(database.String(120), nullable=False)
+    valor = database.Column(database.Numeric(10, 2), nullable=False)
+    forma_pagamento = database.Column(database.String(30), nullable=False, default="local")
+    data_referencia = database.Column(database.Date, nullable=False, index=True)
+    hora_referencia = database.Column(database.Time, nullable=True)
+    status = database.Column(database.String(30), nullable=False, default="confirmado")
+    origem = database.Column(database.String(30), nullable=False, default="agendamento")
+    criado_em = database.Column(database.DateTime, nullable=False, default=utcnow)
+    atualizado_em = database.Column(database.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
 
 class BarberUnavailableSlot(database.Model):
