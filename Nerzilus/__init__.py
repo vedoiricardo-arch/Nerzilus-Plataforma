@@ -206,13 +206,15 @@ def migrate_legacy_hero_images():
 
 def ensure_schema_updates():
     inspector = inspect(database.engine)
+    is_postgresql = database.engine.dialect.name == "postgresql"
+    binary_type = "BYTEA" if is_postgresql else "BLOB"
     tenant_columns = {column["name"] for column in inspector.get_columns("tenant")}
     if "hero_image" not in tenant_columns:
         with database.engine.begin() as connection:
             connection.execute(text("ALTER TABLE tenant ADD COLUMN hero_image VARCHAR(255)"))
     if "hero_image_data" not in tenant_columns:
         with database.engine.begin() as connection:
-            connection.execute(text("ALTER TABLE tenant ADD COLUMN hero_image_data BLOB"))
+            connection.execute(text(f"ALTER TABLE tenant ADD COLUMN hero_image_data {binary_type}"))
     if "hero_image_mimetype" not in tenant_columns:
         with database.engine.begin() as connection:
             connection.execute(text("ALTER TABLE tenant ADD COLUMN hero_image_mimetype VARCHAR(120)"))
