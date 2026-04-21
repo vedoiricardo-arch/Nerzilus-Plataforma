@@ -5,11 +5,11 @@ from functools import wraps
 from io import BytesIO, StringIO
 from pathlib import Path
 
-from flask import Blueprint, Response, abort, current_app, flash, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, Response, abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask import session
 from flask_login import current_user, login_required, login_user, logout_user
-from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text, func
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -18,7 +18,6 @@ from Nerzilus.billing import (
     BillingConfigurationError,
     BillingProviderError,
     asaas_is_configured,
-    can_access_feature,
     can_create_client,
     cancel_subscription_at_period_end,
     create_checkout_session,
@@ -29,7 +28,6 @@ from Nerzilus.billing import (
     get_primary_subscription,
     log_payment_event,
     record_usage,
-    subscription_allows_access,
     sync_subscription_from_asaas_event,
     tenant_has_active_access,
 )
@@ -56,7 +54,6 @@ from Nerzilus.models import (
     PaymentEventLog,
     RevenueRecord,
     Service,
-    Subscription,
     Tenant,
     User,
 )
@@ -202,7 +199,7 @@ def get_standard_slot_labels(slot_interval_minutes=AGENDA_SLOT_MINUTES):
     return labels
 
 
-def get_working_slot_labels(tenant_id, barber_id, selected_day):
+def get_working_slot_labels(tenant_id, barber_id):
     slot_interval_minutes = get_barber_slot_interval(tenant_id, barber_id)
     workday_start, workday_end = get_barber_workday(tenant_id, barber_id)
     working_labels = set()
@@ -325,7 +322,7 @@ def build_booking_time_sections(appointments, selected_day, selected_time_value=
 def build_booking_time_sections_for_barber(tenant_id, barber_id, appointments, selected_day, selected_time_value=None):
     slot_interval_minutes = get_barber_slot_interval(tenant_id, barber_id)
     blocked_slot_labels = get_blocked_slot_labels(tenant_id, barber_id, selected_day)
-    working_slot_labels = get_working_slot_labels(tenant_id, barber_id, selected_day)
+    working_slot_labels = get_working_slot_labels(tenant_id, barber_id)
     sections = build_day_schedule(appointments, selected_day, blocked_slot_labels, working_slot_labels, slot_interval_minutes)
     booking_sections = []
     for section in sections:
@@ -469,11 +466,18 @@ def build_revenue_query(tenant_id, filters):
     return query
 
 
-def calculate_average_ticket(records):
-    confirmed_records = [item for item in records if item.status == "confirmado"]
-    if not confirmed_records:
-        return Decimal("0.00")
-    return calculate_revenue_from_records(confirmed_records) / Decimal(len(confirmed_records))
+def calculate_average_ticket(tenant_id):
+    result = database.session.query(
+        func.sum(RevenueRecord.valor),
+        func.count(RevenueRecord.id)
+    ).filter(
+        RevenueRecord.tenant_id == tenant_id,
+        RevenueRecord.status == "confirmado"
+    ).first()
+    
+    if result and result[1] > 0:
+        return Decimal(result[0]) / Decimal(result[1])
+    return Decimal("0.00")
 
 
 def get_admin_section():
@@ -597,9 +601,10 @@ def dashboard_redirect():
 def healthcheck():
     try:
         database.session.execute(text("SELECT 1"))
-    except Exception:
-        return {"status": "error"}, 503
-    return {"status": "ok"}, 200
+    except SQLAlchemyError as e:
+        current_app.logger.error(f"Database healthcheck failed: {e}")
+        return jsonify(status="error"), 503
+    return jsonify(status="ok"), 200
 
 
 @main_bp.route("/plans")
@@ -755,12 +760,13 @@ def asaas_webhook():
     received_token = request.headers.get("asaas-access-token", "")
 
     if configured_token and configured_token != received_token:
-        return ("Token do webhook invalido.", 401)
+        return jsonify(error="Token do webhook invalido."), 401
 
     event_id = payload.get("id") or payload.get("eventId") or payload.get("payment", {}).get("id")
     existing_log = PaymentEventLog.query.filter_by(external_event_id=event_id).first()
     if existing_log is not None and existing_log.processed_at is not None and existing_log.status == "processed":
-        return ("ok", 200)
+        return jsonify(status="ok"), 200
+        
     if existing_log is None:
         log_payment_event(
             payload.get("event", "asaas.unknown"),
@@ -795,9 +801,9 @@ def asaas_webhook():
             payload={"error": str(exc)},
             status="error",
         )
-        return ("erro ao processar webhook", 400)
+        return jsonify(error="erro ao processar webhook"), 400
 
-    return ("ok", 200)
+    return jsonify(status="ok"), 200
 
 
 @main_bp.route("/logout")
@@ -875,7 +881,7 @@ def dashboard_cliente(tenant):
             .all()
         )
         blocked_slot_labels = get_blocked_slot_labels(tenant.id, form.barbeiro_id.data, form.data_agendamento.data)
-        working_slot_labels = get_working_slot_labels(tenant.id, form.barbeiro_id.data, form.data_agendamento.data)
+        working_slot_labels = get_working_slot_labels(tenant.id, form.barbeiro_id.data)
 
     if not form.barbeiro_id.choices:
         flash("Nenhum barbeiro disponivel.", "error")
@@ -977,54 +983,71 @@ def admin_dashboard(tenant):
     tenant_theme_form = TenantThemeForm()
     tenant_whatsapp_form.whatsapp.data = format_phone_display(resolve_admin_whatsapp(tenant))
     tenant_theme_form.tema.data = tenant.tema if tenant.tema in {"dark", "light", "pink"} else "dark"
+    
     usuarios = User.query.filter_by(tenant_id=tenant.id).order_by(User.is_admin.desc(), User.nome.asc()).all()
     barbeiros = Barber.query.filter_by(tenant_id=tenant.id).order_by(Barber.nome.asc()).all()
     servicos = Service.query.filter_by(tenant_id=tenant.id).order_by(Service.valor.asc()).all()
-    agendamentos = (
-        Appointment.query.filter_by(tenant_id=tenant.id)
-        .order_by(Appointment.data_agendamento.asc(), Appointment.hora_agendamento.asc())
-        .all()
-    )
-    revenue_filters = resolve_revenue_filters()
-    faturamentos = (
-        build_revenue_query(tenant.id, revenue_filters)
-        .order_by(RevenueRecord.data_referencia.desc(), RevenueRecord.hora_referencia.desc(), RevenueRecord.id.desc())
-        .all()
-    )
-    faturamentos_historico = (
-        RevenueRecord.query.filter_by(tenant_id=tenant.id)
-        .order_by(RevenueRecord.data_referencia.desc(), RevenueRecord.hora_referencia.desc(), RevenueRecord.id.desc())
-        .all()
-    )
+    
     today = date.today()
     current_week_start = today - timedelta(days=today.weekday())
     current_week_end = current_week_start + timedelta(days=6)
-    today_appointments = [item for item in agendamentos if item.data_agendamento == today and item.status != "cancelado"]
-    current_week_appointments = [
-        item
-        for item in agendamentos
-        if current_week_start <= item.data_agendamento <= current_week_end and item.status != "cancelado"
-    ]
-    faturamentos_hoje = [item for item in faturamentos_historico if item.data_referencia == today]
-    faturamentos_semana = [
-        item for item in faturamentos_historico if current_week_start <= item.data_referencia <= current_week_end
-    ]
+    
     current_month_start = today.replace(day=1)
     if current_month_start.month == 12:
         current_month_end = current_month_start.replace(year=current_month_start.year + 1, month=1) - timedelta(days=1)
     else:
         current_month_end = current_month_start.replace(month=current_month_start.month + 1) - timedelta(days=1)
-    faturamentos_mes = [
-        item for item in faturamentos_historico if current_month_start <= item.data_referencia <= current_month_end
-    ]
+
+    # Optimizacao: Contagens e Somas direto no banco
+    appointments_today_count = database.session.query(func.count(Appointment.id)).filter(
+        Appointment.tenant_id == tenant.id,
+        Appointment.data_agendamento == today,
+        Appointment.status != "cancelado"
+    ).scalar() or 0
+
+    revenue_today = database.session.query(func.sum(RevenueRecord.valor)).filter(
+        RevenueRecord.tenant_id == tenant.id,
+        RevenueRecord.data_referencia == today,
+        RevenueRecord.status == "confirmado"
+    ).scalar() or Decimal("0.00")
+
+    revenue_week = database.session.query(func.sum(RevenueRecord.valor)).filter(
+        RevenueRecord.tenant_id == tenant.id,
+        RevenueRecord.data_referencia >= current_week_start,
+        RevenueRecord.data_referencia <= current_week_end,
+        RevenueRecord.status == "confirmado"
+    ).scalar() or Decimal("0.00")
+
+    revenue_month = database.session.query(func.sum(RevenueRecord.valor)).filter(
+        RevenueRecord.tenant_id == tenant.id,
+        RevenueRecord.data_referencia >= current_month_start,
+        RevenueRecord.data_referencia <= current_month_end,
+        RevenueRecord.status == "confirmado"
+    ).scalar() or Decimal("0.00")
+
+    revenue_total = database.session.query(func.sum(RevenueRecord.valor)).filter(
+        RevenueRecord.tenant_id == tenant.id,
+        RevenueRecord.status == "confirmado"
+    ).scalar() or Decimal("0.00")
+
+    revenue_filters = resolve_revenue_filters()
+    faturamentos_query = build_revenue_query(tenant.id, revenue_filters)
+    faturamentos = faturamentos_query.order_by(RevenueRecord.data_referencia.desc(), RevenueRecord.hora_referencia.desc(), RevenueRecord.id.desc()).all()
+    
+    revenue_filtered_total = Decimal("0.00")
+    if faturamentos:
+        revenue_filtered_total = sum(f.valor for f in faturamentos if f.status == "confirmado") or Decimal("0.00")
+
     total_clients = sum(1 for usuario in usuarios if not usuario.is_admin)
     selected_day_raw = request.args.get("day")
     active_admin_section = get_admin_section()
     selected_barber_id = request.args.get("barbeiro_id", type=int)
+    
     try:
         selected_day = datetime.strptime(selected_day_raw, "%Y-%m-%d").date() if selected_day_raw else date.today()
     except ValueError:
         selected_day = date.today()
+        
     active_barber = None
     if barbeiros:
         active_barber = next((barber for barber in barbeiros if barber.id == selected_barber_id), barbeiros[0])
@@ -1032,23 +1055,29 @@ def admin_dashboard(tenant):
         barbeiro_form.slot_interval_minutes.data = active_barber.slot_interval_minutes or AGENDA_SLOT_MINUTES
         barbeiro_form.expediente_inicio.data = active_barber.expediente_inicio
         barbeiro_form.expediente_fim.data = active_barber.expediente_fim
+        
     active_slot_interval_minutes = get_barber_slot_interval(tenant.id, selected_barber_id)
     week_start = selected_day - timedelta(days=selected_day.weekday())
-    day_appointments = [
-        item
-        for item in agendamentos
-        if item.data_agendamento == selected_day and (selected_barber_id is None or item.barbeiro_id == selected_barber_id)
-    ]
-    week_appointments = [
-        item
-        for item in agendamentos
-        if week_start <= item.data_agendamento <= week_start + timedelta(days=6)
-        and (selected_barber_id is None or item.barbeiro_id == selected_barber_id)
-    ]
+    
+    # Busca apenas agendamentos da semana/dia para o agendamento
+    agendamentos_view = Appointment.query.filter(
+        Appointment.tenant_id == tenant.id,
+        Appointment.data_agendamento >= week_start,
+        Appointment.data_agendamento <= week_start + timedelta(days=6)
+    )
+    
+    if selected_barber_id is not None:
+        agendamentos_view = agendamentos_view.filter(Appointment.barbeiro_id == selected_barber_id)
+        
+    agendamentos = agendamentos_view.order_by(Appointment.data_agendamento.asc(), Appointment.hora_agendamento.asc()).all()
+
+    day_appointments = [item for item in agendamentos if item.data_agendamento == selected_day]
+    
     blocked_slot_labels = get_blocked_slot_labels(tenant.id, selected_barber_id, selected_day)
-    working_slot_labels = get_working_slot_labels(tenant.id, selected_barber_id, selected_day)
-    week_days, week_schedule = build_week_schedule(week_appointments, week_start)
+    working_slot_labels = get_working_slot_labels(tenant.id, selected_barber_id)
+    week_days, week_schedule = build_week_schedule(agendamentos, week_start)
     status_forms = {agendamento.id: AppointmentStatusForm(status=agendamento.status) for agendamento in agendamentos}
+    
     return render_template(
         "admin_dashboard.html",
         barbeiro_form=barbeiro_form,
@@ -1060,17 +1089,17 @@ def admin_dashboard(tenant):
         barbeiros=barbeiros,
         active_barber=active_barber,
         servicos=servicos,
-        appointments_today_count=len(today_appointments),
-        revenue_today=calculate_revenue_from_records(faturamentos_hoje),
-        revenue_week=calculate_revenue_from_records(faturamentos_semana),
+        appointments_today_count=appointments_today_count,
+        revenue_today=revenue_today,
+        revenue_week=revenue_week,
+        revenue_month=revenue_month,
+        revenue_total=revenue_total,
         total_clients=total_clients,
         agendamentos=agendamentos,
         faturamentos=faturamentos,
         billing_filters=revenue_filters,
-        revenue_month=calculate_revenue_from_records(faturamentos_mes),
-        revenue_total=calculate_revenue_from_records(faturamentos_historico),
-        revenue_filtered_total=calculate_revenue_from_records(faturamentos),
-        revenue_average_ticket=calculate_average_ticket(faturamentos),
+        revenue_filtered_total=revenue_filtered_total,
+        revenue_average_ticket=calculate_average_ticket(tenant.id),
         active_admin_section=active_admin_section,
         selected_day=selected_day,
         selected_barber_id=selected_barber_id,
@@ -1424,6 +1453,8 @@ def excluir_agendamento(tenant, appointment_id):
 @main_bp.app_errorhandler(403)
 def forbidden(_error):
     return render_template("403.html"), 403
+
+
 @main_bp.route("/t/<tenant_slug>/admin/agenda/slot", methods=["POST"])
 @login_required
 @tenant_member_required
@@ -1485,6 +1516,3 @@ def toggle_slot_disponibilidade(tenant):
         day=selected_day.isoformat(),
         barbeiro_id=barber.id,
     )
-
-
-
