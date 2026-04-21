@@ -113,18 +113,19 @@ def create_app():
 
     with app.app_context():
         try:
-            database.create_all()
-            ensure_schema_updates()
-            seed_initial_data()
-            migrate_legacy_hero_images()
+            bootstrap_database()
         except OperationalError:
             database.drop_all()
-            database.create_all()
-            ensure_schema_updates()
-            seed_initial_data()
-            migrate_legacy_hero_images()
+            bootstrap_database()
 
     return app
+
+
+def bootstrap_database():
+    database.create_all()
+    ensure_schema_updates()
+    seed_initial_data()
+    migrate_legacy_hero_images()
 
 
 def seed_initial_data():
@@ -276,6 +277,69 @@ def ensure_schema_updates():
     if "external_event_id" not in payment_event_columns:
         with database.engine.begin() as connection:
             connection.execute(text("ALTER TABLE payment_event_log ADD COLUMN external_event_id VARCHAR(120)"))
+
+    deduplicate_active_appointments()
+    appointment_indexes = {index["name"] for index in inspector.get_indexes("appointment")}
+    if "uq_active_appointment_slot" not in appointment_indexes:
+        if is_postgresql:
+            index_sql = """
+                CREATE UNIQUE INDEX uq_active_appointment_slot
+                ON appointment (tenant_id, barbeiro_id, data_agendamento, hora_agendamento)
+                WHERE status <> 'cancelado'
+            """
+        else:
+            index_sql = """
+                CREATE UNIQUE INDEX uq_active_appointment_slot
+                ON appointment (tenant_id, barbeiro_id, data_agendamento, hora_agendamento)
+                WHERE status != 'cancelado'
+            """
+        with database.engine.begin() as connection:
+            connection.execute(text(index_sql))
+
+
+def deduplicate_active_appointments():
+    from Nerzilus.models import Appointment, RevenueRecord
+
+    duplicate_rows = (
+        database.session.query(
+            Appointment.tenant_id,
+            Appointment.barbeiro_id,
+            Appointment.data_agendamento,
+            Appointment.hora_agendamento,
+        )
+        .filter(Appointment.status != "cancelado")
+        .group_by(
+            Appointment.tenant_id,
+            Appointment.barbeiro_id,
+            Appointment.data_agendamento,
+            Appointment.hora_agendamento,
+        )
+        .having(text("COUNT(*) > 1"))
+        .all()
+    )
+
+    has_changes = False
+    for tenant_id, barber_id, booking_date, booking_time in duplicate_rows:
+        appointments = (
+            Appointment.query.filter_by(
+                tenant_id=tenant_id,
+                barbeiro_id=barber_id,
+                data_agendamento=booking_date,
+                hora_agendamento=booking_time,
+            )
+            .filter(Appointment.status != "cancelado")
+            .order_by(Appointment.criado_em.asc(), Appointment.id.asc())
+            .all()
+        )
+        for duplicate in appointments[1:]:
+            duplicate.status = "cancelado"
+            revenue = RevenueRecord.query.filter_by(appointment_id=duplicate.id).first()
+            if revenue is not None:
+                revenue.status = "cancelado"
+            has_changes = True
+
+    if has_changes:
+        database.session.commit()
 
 
 def seed_tenant_defaults(tenant_id):

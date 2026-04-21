@@ -12,13 +12,13 @@
       </div>
 
       <nav class="admin-sidebar-nav" aria-label="Menu do painel administrativo">
-        <button type="button" class="admin-nav-button is-active" data-admin-nav-target="painel">Painel do adm</button>
-        <button type="button" class="admin-nav-button" data-admin-nav-target="agenda">Agenda</button>
-        <button type="button" class="admin-nav-button" data-admin-nav-target="faturamentos">Faturamentos</button>
-        <button type="button" class="admin-nav-button" data-admin-nav-target="barbeiros">Barbeiros ativos</button>
-        <button type="button" class="admin-nav-button" data-admin-nav-target="servicos">Servicos</button>
-        <button type="button" class="admin-nav-button" data-admin-nav-target="novo-barbeiro">Novo barbeiro</button>
-        <button type="button" class="admin-nav-button" data-admin-nav-target="novo-servico">Novo servico</button>
+        <button type="button" class="admin-nav-button{% if active_admin_section == 'painel' %} is-active{% endif %}" data-admin-nav-target="painel">Painel do adm</button>
+        <button type="button" class="admin-nav-button{% if active_admin_section == 'agenda' %} is-active{% endif %}" data-admin-nav-target="agenda">Agenda</button>
+        <button type="button" class="admin-nav-button{% if active_admin_section == 'faturamentos' %} is-active{% endif %}" data-admin-nav-target="faturamentos">Faturamentos</button>
+        <button type="button" class="admin-nav-button{% if active_admin_section == 'barbeiros' %} is-active{% endif %}" data-admin-nav-target="barbeiros">Barbeiros ativos</button>
+        <button type="button" class="admin-nav-button{% if active_admin_section == 'servicos' %} is-active{% endif %}" data-admin-nav-target="servicos">Servicos</button>
+        <button type="button" class="admin-nav-button{% if active_admin_section == 'novo-barbeiro' %} is-active{% endif %}" data-admin-nav-target="novo-barbeiro">Novo barbeiro</button>
+        <button type="button" class="admin-nav-button{% if active_admin_section == 'novo-servico' %} is-active{% endif %}" data-admin-nav-target="novo-servico">Novo servico</button>
       </nav>
 
       <div class="admin-sidebar-actions">
@@ -42,13 +42,13 @@
         <aside class="panel admin-mobile-drawer-panel" id="admin-mobile-drawer" aria-label="Menu lateral administrativo">
           <button type="button" class="admin-mobile-drawer-close" data-admin-menu-close aria-label="Fechar menu">&times;</button>
           <nav class="admin-mobile-drawer-nav">
-            <button type="button" class="admin-nav-button is-active" data-admin-nav-target="painel">Painel</button>
-            <button type="button" class="admin-nav-button" data-admin-nav-target="agenda">Agenda</button>
-            <button type="button" class="admin-nav-button" data-admin-nav-target="faturamentos">Faturamentos</button>
-            <button type="button" class="admin-nav-button" data-admin-nav-target="barbeiros">Barbeiros</button>
-            <button type="button" class="admin-nav-button" data-admin-nav-target="servicos">Servicos</button>
-            <button type="button" class="admin-nav-button" data-admin-nav-target="novo-barbeiro">Novo barbeiro</button>
-            <button type="button" class="admin-nav-button" data-admin-nav-target="novo-servico">Novo servico</button>
+            <button type="button" class="admin-nav-button{% if active_admin_section == 'painel' %} is-active{% endif %}" data-admin-nav-target="painel">Painel</button>
+            <button type="button" class="admin-nav-button{% if active_admin_section == 'agenda' %} is-active{% endif %}" data-admin-nav-target="agenda">Agenda</button>
+            <button type="button" class="admin-nav-button{% if active_admin_section == 'faturamentos' %} is-active{% endif %}" data-admin-nav-target="faturamentos">Faturamentos</button>
+            <button type="button" class="admin-nav-button{% if active_admin_section == 'barbeiros' %} is-active{% endif %}" data-admin-nav-target="barbeiros">Barbeiros</button>
+            <button type="button" class="admin-nav-button{% if active_admin_section == 'servicos' %} is-active{% endif %}" data-admin-nav-target="servicos">Servicos</button>
+            <button type="button" class="admin-nav-button{% if active_admin_section == 'novo-barbeiro' %} is-active{% endif %}" data-admin-nav-target="novo-barbeiro">Novo barbeiro</button>
+            <button type="button" class="admin-nav-button{% if active_admin_section == 'novo-servico' %} is-active{% endif %}" data-admin-nav-target="novo-servico">Novo servico</button>
           </nav>
           <div class="admin-mobile-drawer-actions">
             <a href="{{ client_booking_url }}" class="button button-primary">Link do cliente</a>
@@ -58,7 +58,7 @@
         </aside>
       </div>
 
-      <section class="admin-section is-active" data-admin-section="painel">
+      <section class="admin-section{% if active_admin_section == 'painel' %} is-active{% endif %}" data-admin-section="painel">
         <section class="admin-hero panel">
           <div class="admin-hero-photo" style="background-image:url('{{ hero_image_url }}');" aria-hidden="true"></div>
 
@@ -114,7 +114,7 @@
 
       </section>
 
-      <section class="admin-section" data-admin-section="agenda">
+      <section class="admin-section{% if active_admin_section == 'agenda' %} is-active{% endif %}" data-admin-section="agenda">
         <section class="panel compact-panel">
           <div class="top-row">
             <div>
@@ -122,6 +122,7 @@
               <h2 class="section-title">Agenda por dia e por semana</h2>
             </div>
             <form method="GET" action="{{ url_for('main.admin_dashboard', tenant_slug=tenant.slug) }}" class="agenda-filter">
+              <input type="hidden" name="section" value="agenda" />
               <label for="agenda-barber">Barbeiro</label>
               <select id="agenda-barber" name="barbeiro_id" class="input">
                 {% for barbeiro in barbeiros %}
@@ -186,6 +187,9 @@
                             <div class="agenda-actions">
                               <form method="POST" action="{{ url_for('main.atualizar_status_agendamento', tenant_slug=tenant.slug, appointment_id=row.appointment.id) }}" class="inline-actions">
                                 {{ status_forms[row.appointment.id].csrf_token }}
+                                <input type="hidden" name="section" value="agenda" />
+                                <input type="hidden" name="day" value="{{ selected_day.isoformat() }}" />
+                                <input type="hidden" name="barbeiro_id" value="{{ selected_barber_id }}" />
                                 {{ status_forms[row.appointment.id].status(class="input select-inline") }}
                                 {{ status_forms[row.appointment.id].botao_confirmacao(class="button button-secondary slim-button") }}
                               </form>
@@ -196,6 +200,7 @@
                             <div class="agenda-actions">
                               <form method="POST" action="{{ url_for('main.toggle_slot_disponibilidade', tenant_slug=tenant.slug) }}" class="inline-actions">
                                 {{ slot_form.csrf_token }}
+                                <input type="hidden" name="section" value="agenda" />
                                 <input type="hidden" name="barbeiro_id" value="{{ selected_barber_id }}" />
                                 <input type="hidden" name="data_referencia" value="{{ selected_day.isoformat() }}" />
                                 <input type="hidden" name="hora_referencia" value="{{ row.label }}" />
@@ -213,6 +218,7 @@
                             <div class="agenda-actions">
                               <form method="POST" action="{{ url_for('main.toggle_slot_disponibilidade', tenant_slug=tenant.slug) }}" class="inline-actions">
                                 {{ slot_form.csrf_token }}
+                                <input type="hidden" name="section" value="agenda" />
                                 <input type="hidden" name="barbeiro_id" value="{{ selected_barber_id }}" />
                                 <input type="hidden" name="data_referencia" value="{{ selected_day.isoformat() }}" />
                                 <input type="hidden" name="hora_referencia" value="{{ row.label }}" />
@@ -231,7 +237,7 @@
         </section>
       </section>
 
-      <section class="admin-section" data-admin-section="faturamentos">
+      <section class="admin-section{% if active_admin_section == 'faturamentos' %} is-active{% endif %}" data-admin-section="faturamentos">
         <section class="panel compact-panel">
           <div class="top-row">
             <div>
@@ -242,6 +248,7 @@
           </div>
 
           <form method="GET" action="{{ url_for('main.admin_dashboard', tenant_slug=tenant.slug) }}" class="faturamento-filter-bar">
+            <input type="hidden" name="section" value="faturamentos" />
             <input type="hidden" name="day" value="{{ selected_day.isoformat() }}" />
             {% if selected_barber_id %}
               <input type="hidden" name="barbeiro_id" value="{{ selected_barber_id }}" />
@@ -331,7 +338,7 @@
         </section>
       </section>
 
-      <section class="admin-section" data-admin-section="barbeiros">
+      <section class="admin-section{% if active_admin_section == 'barbeiros' %} is-active{% endif %}" data-admin-section="barbeiros">
         <section class="panel compact-panel">
           <p class="eyebrow">Barbeiros ativos</p>
           <div class="list-stack">
@@ -366,7 +373,7 @@
         </section>
       </section>
 
-      <section class="admin-section" data-admin-section="servicos">
+      <section class="admin-section{% if active_admin_section == 'servicos' %} is-active{% endif %}" data-admin-section="servicos">
         <section class="panel compact-panel">
           <p class="eyebrow">Servicos</p>
           <div class="list-stack">
@@ -396,7 +403,7 @@
         </section>
       </section>
 
-      <section class="admin-section" data-admin-section="novo-barbeiro">
+      <section class="admin-section{% if active_admin_section == 'novo-barbeiro' %} is-active{% endif %}" data-admin-section="novo-barbeiro">
         <section class="panel compact-panel">
           <p class="eyebrow">Novo barbeiro</p>
           <form method="POST" action="{{ url_for('main.criar_barbeiro', tenant_slug=tenant.slug) }}" class="form-stack compact-top">
@@ -428,7 +435,7 @@
         </section>
       </section>
 
-      <section class="admin-section" data-admin-section="novo-servico">
+      <section class="admin-section{% if active_admin_section == 'novo-servico' %} is-active{% endif %}" data-admin-section="novo-servico">
         <section class="panel compact-panel">
           <p class="eyebrow">Novo servico</p>
           <form method="POST" action="{{ url_for('main.criar_servico', tenant_slug=tenant.slug) }}" class="form-stack compact-top">
@@ -517,7 +524,10 @@
         });
 
         if (shouldUpdateHash) {
-          window.history.replaceState(null, "", `#${sectionName}`);
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set("section", sectionName);
+          currentUrl.hash = sectionName;
+          window.history.replaceState(null, "", currentUrl.toString());
         }
 
         setDrawerState(false);
@@ -538,8 +548,12 @@
         button.addEventListener("click", () => setDrawerState(false));
       });
 
-      const initialSection = window.location.hash.replace("#", "");
-      activateSection(sectionNames.has(initialSection) ? initialSection : "painel", false);
+      const hashSection = window.location.hash.replace("#", "");
+      const initialSection = "{{ active_admin_section }}";
+      const resolvedInitialSection = sectionNames.has(hashSection)
+        ? hashSection
+        : (sectionNames.has(initialSection) ? initialSection : "painel");
+      activateSection(resolvedInitialSection, false);
     })();
   </script>
 {% endblock %}

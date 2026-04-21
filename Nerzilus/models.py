@@ -103,6 +103,19 @@ class Service(database.Model):
 
 
 class Appointment(database.Model):
+    __table_args__ = (
+        database.Index(
+            "uq_active_appointment_slot",
+            "tenant_id",
+            "barbeiro_id",
+            "data_agendamento",
+            "hora_agendamento",
+            unique=True,
+            sqlite_where=database.text("status != 'cancelado'"),
+            postgresql_where=database.text("status != 'cancelado'"),
+        ),
+    )
+
     id = database.Column(database.Integer, primary_key=True)
     tenant_id = database.Column(database.Integer, database.ForeignKey("tenant.id"), nullable=False, index=True)
     cliente_id = database.Column(database.Integer, database.ForeignKey("user.id"), nullable=False)

@@ -380,6 +380,60 @@ class AppRoutesTestCase(unittest.TestCase):
             self.assertEqual(float(revenue.valor), 35.0)
             self.assertEqual(revenue.status, "confirmado")
 
+    def test_same_slot_cannot_be_booked_twice(self):
+        booking_day = date.today() + timedelta(days=1)
+
+        self.client.post(
+            "/t/nerzilus-studio/cliente",
+            data={"nome": "Cliente Unico", "telefone": "11934343434"},
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus.models import Barber, Service, Tenant
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            barber = Barber.query.filter_by(tenant_id=tenant.id).order_by(Barber.nome.asc()).first()
+            service = Service.query.filter_by(tenant_id=tenant.id, nome="Corte").first()
+
+        with patch("Nerzilus.routes.send_booking_whatsapp_notification"):
+            primeira_resposta = self.client.post(
+                "/t/nerzilus-studio/cliente/dashboard",
+                data={
+                    "barbeiro_id": barber.id,
+                    "servico_id": service.id,
+                    "data_agendamento": booking_day.isoformat(),
+                    "hora_agendamento": "14:45",
+                },
+                follow_redirects=True,
+            )
+
+            segunda_resposta = self.client.post(
+                "/t/nerzilus-studio/cliente/dashboard",
+                data={
+                    "barbeiro_id": barber.id,
+                    "servico_id": service.id,
+                    "data_agendamento": booking_day.isoformat(),
+                    "hora_agendamento": "14:45",
+                },
+                follow_redirects=True,
+            )
+
+        self.assertEqual(primeira_resposta.status_code, 200)
+        self.assertIn(b"Agendamento criado", primeira_resposta.data)
+        self.assertEqual(segunda_resposta.status_code, 200)
+        self.assertIn("acabou de ficar indisponivel".encode("utf-8"), segunda_resposta.data)
+
+        with self.app.app_context():
+            from Nerzilus.models import Appointment
+
+            appointments = Appointment.query.filter_by(
+                barbeiro_id=barber.id,
+                data_agendamento=booking_day,
+            ).all()
+            ativos = [item for item in appointments if item.hora_agendamento.strftime("%H:%M") == "14:45" and item.status != "cancelado"]
+            self.assertEqual(len(ativos), 1)
+
     def test_booking_whatsapp_message_has_readable_spacing_and_emojis(self):
         with self.app.app_context():
             from Nerzilus import database
@@ -695,6 +749,76 @@ class AppRoutesTestCase(unittest.TestCase):
         self.assertIn("Exportar CSV".encode("utf-8"), resposta.data)
         self.assertIn(b"R$ 35.00", resposta.data)
         self.assertIn("total ja cadastrado no banco".encode("utf-8"), resposta.data)
+
+    def test_admin_agenda_actions_keep_agenda_section_active(self):
+        booking_day = date.today() + timedelta(days=1)
+
+        self.client.post(
+            "/t/nerzilus-studio/cliente",
+            data={"nome": "Cliente Agenda", "telefone": "11945454545"},
+            follow_redirects=True,
+        )
+
+        with self.app.app_context():
+            from Nerzilus import database
+            from Nerzilus.models import Appointment, Barber, Service, Tenant, User
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            barber = Barber.query.filter_by(tenant_id=tenant.id).order_by(Barber.nome.asc()).first()
+            service = Service.query.filter_by(tenant_id=tenant.id, nome="Corte").first()
+            client = User.query.filter_by(tenant_id=tenant.id, telefone="11945454545", is_admin=False).first()
+
+            appointment = Appointment(
+                tenant_id=tenant.id,
+                cliente_id=client.id,
+                barbeiro_id=barber.id,
+                servico_id=service.id,
+                forma_pagamento="local",
+                data_agendamento=booking_day,
+                hora_agendamento=time(14, 0),
+                status="confirmado",
+            )
+            database.session.add(appointment)
+            database.session.commit()
+            appointment_id = appointment.id
+            barber_id = barber.id
+
+        self.client.get("/logout", follow_redirects=True)
+        self.login_admin()
+
+        resposta_status = self.client.post(
+            f"/t/nerzilus-studio/admin/agendamentos/{appointment_id}/status",
+            data={
+                "status": "concluido",
+                "botao_confirmacao": True,
+                "section": "agenda",
+                "day": booking_day.isoformat(),
+                "barbeiro_id": barber_id,
+            },
+            follow_redirects=False,
+        )
+
+        self.assertEqual(resposta_status.status_code, 302)
+        self.assertIn("section=agenda", resposta_status.headers["Location"])
+        self.assertIn(f"day={booking_day.isoformat()}".encode("utf-8").decode("utf-8"), resposta_status.headers["Location"])
+        self.assertIn(f"barbeiro_id={barber_id}", resposta_status.headers["Location"])
+
+        resposta_slot = self.client.post(
+            "/t/nerzilus-studio/admin/agenda/slot",
+            data={
+                "barbeiro_id": barber_id,
+                "data_referencia": booking_day.isoformat(),
+                "hora_referencia": "17:00",
+                "section": "agenda",
+                "botao_confirmacao": True,
+            },
+            follow_redirects=False,
+        )
+
+        self.assertEqual(resposta_slot.status_code, 302)
+        self.assertIn("section=agenda", resposta_slot.headers["Location"])
+        self.assertIn(f"day={booking_day.isoformat()}".encode("utf-8").decode("utf-8"), resposta_slot.headers["Location"])
+        self.assertIn(f"barbeiro_id={barber_id}", resposta_slot.headers["Location"])
 
     def test_client_remains_in_database_after_appointment_is_removed(self):
         booking_day = date.today() + timedelta(days=1)

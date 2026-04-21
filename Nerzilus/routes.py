@@ -9,6 +9,7 @@ from flask import Blueprint, Response, abort, current_app, flash, redirect, rend
 from flask import session
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -475,6 +476,24 @@ def calculate_average_ticket(records):
     return calculate_revenue_from_records(confirmed_records) / Decimal(len(confirmed_records))
 
 
+def get_admin_section():
+    allowed_sections = {"painel", "agenda", "faturamentos", "barbeiros", "servicos", "novo-barbeiro", "novo-servico"}
+    requested_section = request.values.get("section", "painel")
+    return requested_section if requested_section in allowed_sections else "painel"
+
+
+def redirect_to_admin_dashboard(tenant, *, section=None, **params):
+    section_name = section or get_admin_section()
+    return redirect(
+        url_for(
+            "main.admin_dashboard",
+            tenant_slug=tenant.slug,
+            section=section_name,
+            **params,
+        )
+    )
+
+
 @main_bp.route("/", methods=["GET", "POST"])
 def homepage():
     login_form = build_platform_login_form()
@@ -891,10 +910,15 @@ def dashboard_cliente(tenant):
             hora_agendamento=form.hora_agendamento.data,
             status="confirmado",
         )
-        database.session.add(agendamento)
-        database.session.flush()
-        create_or_update_revenue_record(agendamento)
-        database.session.commit()
+        try:
+            database.session.add(agendamento)
+            database.session.flush()
+            create_or_update_revenue_record(agendamento)
+            database.session.commit()
+        except IntegrityError:
+            database.session.rollback()
+            flash("Este horario acabou de ficar indisponivel.", "error")
+            return redirect(url_for("main.dashboard_cliente", tenant_slug=tenant.slug))
         notification = send_booking_whatsapp_notification(agendamento)
         direct_link = getattr(notification, "direct_link", None)
         direct_message = getattr(notification, "message", None)
@@ -995,6 +1019,7 @@ def admin_dashboard(tenant):
     ]
     total_clients = sum(1 for usuario in usuarios if not usuario.is_admin)
     selected_day_raw = request.args.get("day")
+    active_admin_section = get_admin_section()
     selected_barber_id = request.args.get("barbeiro_id", type=int)
     try:
         selected_day = datetime.strptime(selected_day_raw, "%Y-%m-%d").date() if selected_day_raw else date.today()
@@ -1046,6 +1071,7 @@ def admin_dashboard(tenant):
         revenue_total=calculate_revenue_from_records(faturamentos_historico),
         revenue_filtered_total=calculate_revenue_from_records(faturamentos),
         revenue_average_ticket=calculate_average_ticket(faturamentos),
+        active_admin_section=active_admin_section,
         selected_day=selected_day,
         selected_barber_id=selected_barber_id,
         day_schedule=build_day_schedule(
@@ -1131,7 +1157,7 @@ def atualizar_whatsapp_tenant(tenant):
         flash("WhatsApp da barbearia atualizado.", "success")
     else:
         flash("Nao foi possivel atualizar o WhatsApp.", "error")
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(tenant)
 
 
 @main_bp.route("/t/<tenant_slug>/admin/tema", methods=["POST"])
@@ -1147,7 +1173,7 @@ def atualizar_tema_tenant(tenant):
         flash("Tema da plataforma atualizado.", "success")
     else:
         flash("Nao foi possivel atualizar o tema.", "error")
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(tenant)
 
 
 @main_bp.route("/t/<tenant_slug>/admin/cabecalho-imagem", methods=["POST"])
@@ -1159,13 +1185,13 @@ def atualizar_imagem_cabecalho(tenant):
     image_file = request.files.get("hero_image")
     if image_file is None or not image_file.filename:
         flash("Selecione uma imagem para o cabecalho.", "error")
-        return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+        return redirect_to_admin_dashboard(tenant)
 
     filename = secure_filename(image_file.filename)
     extension = Path(filename).suffix.lower()
     if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
         flash("Formato invalido. Use JPG, PNG ou WEBP.", "error")
-        return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+        return redirect_to_admin_dashboard(tenant)
 
     upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -1179,7 +1205,7 @@ def atualizar_imagem_cabecalho(tenant):
     image_bytes = image_file.read()
     if not image_bytes:
         flash("Nao foi possivel ler a imagem enviada.", "error")
-        return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+        return redirect_to_admin_dashboard(tenant)
 
     (upload_dir / final_name).write_bytes(image_bytes)
     tenant.hero_image = final_name
@@ -1192,7 +1218,7 @@ def atualizar_imagem_cabecalho(tenant):
     }.get(extension, "application/octet-stream")
     database.session.commit()
     flash("Imagem do cabecalho atualizada.", "success")
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(tenant)
 
 
 @main_bp.route("/t/<tenant_slug>/hero-image")
@@ -1241,7 +1267,7 @@ def criar_barbeiro(tenant):
         flash("Barbeiro criado.", "success")
     else:
         flash("Nao foi possivel criar o barbeiro.", "error")
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(tenant)
 
 
 @main_bp.route("/t/<tenant_slug>/admin/servicos/novo", methods=["POST"])
@@ -1267,7 +1293,7 @@ def criar_servico(tenant):
         flash("Servico criado.", "success")
     else:
         flash("Nao foi possivel criar o servico.", "error")
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(tenant)
 
 
 @main_bp.route("/t/<tenant_slug>/admin/servicos/<int:service_id>/editar", methods=["POST"])
@@ -1294,7 +1320,7 @@ def editar_servico(tenant, service_id):
         flash("Servico atualizado.", "success")
     else:
         flash("Nao foi possivel atualizar o servico.", "error")
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(tenant)
 
 
 @main_bp.route("/t/<tenant_slug>/admin/servicos/<int:service_id>/excluir", methods=["POST"])
@@ -1311,7 +1337,7 @@ def excluir_servico(tenant, service_id):
         database.session.delete(servico)
         flash("Servico excluido.", "success")
     database.session.commit()
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(tenant)
 
 
 @main_bp.route("/t/<tenant_slug>/admin/barbeiros/<int:barber_id>/editar", methods=["POST"])
@@ -1332,7 +1358,7 @@ def editar_barbeiro(tenant, barber_id):
         flash("Barbeiro atualizado.", "success")
     else:
         flash("Nao foi possivel atualizar.", "error")
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(tenant)
 
 
 @main_bp.route("/t/<tenant_slug>/admin/barbeiros/<int:barber_id>/excluir", methods=["POST"])
@@ -1349,7 +1375,7 @@ def excluir_barbeiro(tenant, barber_id):
         database.session.delete(barbeiro)
     database.session.commit()
     flash("Barbeiro removido da agenda.", "success")
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(tenant)
 
 
 @main_bp.route("/t/<tenant_slug>/admin/agendamentos/<int:appointment_id>/status", methods=["POST"])
@@ -1367,7 +1393,11 @@ def atualizar_status_agendamento(tenant, appointment_id):
         flash("Status atualizado.", "success")
     else:
         flash("Nao foi possivel atualizar o status.", "error")
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(
+        tenant,
+        day=request.form.get("day") or None,
+        barbeiro_id=request.form.get("barbeiro_id") or None,
+    )
 
 
 @main_bp.route("/t/<tenant_slug>/admin/agendamentos/<int:appointment_id>/excluir", methods=["POST"])
@@ -1384,7 +1414,11 @@ def excluir_agendamento(tenant, appointment_id):
     database.session.delete(agendamento)
     database.session.commit()
     flash("Agendamento excluido.", "success")
-    return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+    return redirect_to_admin_dashboard(
+        tenant,
+        day=request.form.get("day") or None,
+        barbeiro_id=request.form.get("barbeiro_id") or None,
+    )
 
 
 @main_bp.app_errorhandler(403)
@@ -1399,7 +1433,7 @@ def toggle_slot_disponibilidade(tenant):
     form = SlotAvailabilityForm()
     if not form.validate_on_submit():
         flash("Nao foi possivel atualizar o slot.", "error")
-        return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
+        return redirect_to_admin_dashboard(tenant, section="agenda")
 
     barber_id = int(form.barbeiro_id.data)
     selected_day = datetime.strptime(form.data_referencia.data, "%Y-%m-%d").date()
@@ -1445,13 +1479,12 @@ def toggle_slot_disponibilidade(tenant):
         database.session.commit()
         flash("Slot liberado para o cliente.", "success")
 
-    return redirect(
-        url_for(
-            "main.admin_dashboard",
-            tenant_slug=tenant.slug,
-            day=selected_day.isoformat(),
-            barbeiro_id=barber.id,
-        )
+    return redirect_to_admin_dashboard(
+        tenant,
+        section="agenda",
+        day=selected_day.isoformat(),
+        barbeiro_id=barber.id,
     )
+
 
 

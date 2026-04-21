@@ -1,6 +1,5 @@
-from Nerzilus import app, database, seed_initial_data
+from Nerzilus import app, bootstrap_database
 
 
 with app.app_context():
-    database.create_all()
-    seed_initial_data()
+    bootstrap_database()
