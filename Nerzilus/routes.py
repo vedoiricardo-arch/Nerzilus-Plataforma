@@ -5,7 +5,7 @@ from functools import wraps
 from io import BytesIO, StringIO
 from pathlib import Path
 
-from flask import Blueprint, Response, abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, Response, abort, current_app, flash, jsonify, redirect, render_template, request, send_file, send_from_directory, url_for
 from flask import session
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import text, func
@@ -497,6 +497,13 @@ def redirect_to_admin_dashboard(tenant, *, section=None, **params):
         )
     )
 
+@main_bp.route("/sw.js")
+def service_worker():
+    return send_from_directory(current_app.static_folder, 'sw.js', mimetype='application/javascript')
+
+@main_bp.route("/offline.html")
+def offline_page():
+    return render_template("offline.html")
 
 @main_bp.route("/", methods=["GET", "POST"])
 def homepage():

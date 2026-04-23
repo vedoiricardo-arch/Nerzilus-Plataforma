@@ -1,0 +1,31 @@
+{
+  "background_color": "#000000",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Nerzilus",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Nerzilus",
+  "start_url": "https://nerzilus-plataforma.onrender.com/",
+  "theme_color": "#000000",
+  "id": "Nerzil",
+  "description": "Plataforma de gestão de agenda, clientes e faturamento",
+  "lang": "pt",
+  "categories": [
+    "business",
+    "personalization",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/static/images/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

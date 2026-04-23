@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/icon-192x192.png') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
     <title>{% block title %}NerzilusBee{% endblock %}</title>
   </head>
@@ -20,5 +23,19 @@
       {% endwith %}
       {% block content %}{% endblock %}
     </main>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('ServiceWorker registrado com sucesso:', registration.scope);
+            })
+            .catch(error => {
+              console.log('Falha ao registrar o ServiceWorker:', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
