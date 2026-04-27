@@ -155,7 +155,7 @@
                       {% for appointment in column.appointments %}
                         <div class="agenda-week-card">
                           <strong>{{ appointment.hora_agendamento.strftime('%H:%M') }} - {{ appointment.fim.strftime('%H:%M') }}</strong>
-                          <span>{{ appointment.cliente.nome }}</span>
+                          <span>{{ appointment.cliente.nome }} ({{ appointment.cliente.telefone }})</span>
                           <span>{{ appointment.barbeiro_rel.nome }} - {{ appointment.servico_rel.nome }}</span>
                         </div>
                       {% else %}
@@ -181,7 +181,7 @@
                         <div class="agenda-time">{{ row.label }}</div>
                         <div class="agenda-cell{% if row.appointment %} has-appointment{% endif %}{% if row.is_blocked %} is-blocked{% endif %}{% if row.is_continuation %} is-continuation{% endif %}">
                           {% if row.appointment %}
-                            <strong>{{ row.appointment.cliente.nome }}</strong>
+                            <strong>{{ row.appointment.cliente.nome }} ({{ row.appointment.cliente.telefone }})</strong>
                             <span>{{ row.appointment.barbeiro_rel.nome }} - {{ row.appointment.servico_rel.nome }}</span>
                             <span>{{ "Pix pelo app" if row.appointment.forma_pagamento == "pix" else "Pagar no local" }}</span>
                             <div class="agenda-actions">
