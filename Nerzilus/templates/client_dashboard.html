@@ -12,7 +12,7 @@
       </div>
       <div class="client-top-actions">
         {% if tenant_whatsapp_link %}
-          <a href="{{ tenant_whatsapp_link }}" target="_blank" rel="noopener noreferrer" class="link-button contact-link-button">WhatsApp da barbearia</a>
+          <a href="{{ tenant_whatsapp_link }}" target="_blank" rel="noopener noreferrer" class="link-button contact-link-button">WhatsApp do espaço</a>
         {% endif %}
         <a href="{{ url_for('main.logout') }}" class="link-button">Sair</a>
       </div>
@@ -65,7 +65,7 @@
                   {% elif row.is_blocked %}
                     <div class="agenda-cell booking-slot-card is-unavailable is-blocked">
                       <strong>Indisponivel</strong>
-                      <span>Horario bloqueado pela barbearia</span>
+                      <span>Horario bloqueado pelo espaço</span>
                     </div>
                   {% elif not row.is_working %}
                     <div class="agenda-cell booking-slot-card is-unavailable">
@@ -117,7 +117,7 @@
         <div class="booking-section-head">
           <span class="booking-step-index">03</span>
           <div>
-            <h2 class="section-title">Barbeiro</h2>
+            <h2 class="section-title">Profissional</h2>
             <p class="subtitle">Por ultimo, escolha quem vai realizar o atendimento.</p>
           </div>
         </div>

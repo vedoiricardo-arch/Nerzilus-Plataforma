@@ -465,7 +465,7 @@ class AppRoutesTestCase(unittest.TestCase):
 
             self.assertIn("\u2705 *Novo agendamento confirmado*", message)
             self.assertIn("\U0001F4F1 *WhatsApp:* (11) 99999-9999", message)
-            self.assertIn("\U0001F488 *Barbeiro:*", message)
+            self.assertIn("\U0001F488 *Profissional:*", message)
             self.assertIn("\u2702\uFE0F *Servico:*", message)
             self.assertIn("\u23F0 *Hora:* 14:30", message)
             self.assertIn("------------------------------", message)
@@ -508,7 +508,7 @@ class AppRoutesTestCase(unittest.TestCase):
             f"/t/nerzilus-studio/cliente/dashboard?barbeiro_id={barber.id}&data_agendamento={selected_day.isoformat()}",
             follow_redirects=True,
         )
-        self.assertIn("Horario bloqueado pela barbearia".encode("utf-8"), visualizacao.data)
+        self.assertIn("Horario bloqueado pelo espaço".encode("utf-8"), visualizacao.data)
 
         tentativa = self.client.post(
             "/t/nerzilus-studio/cliente/dashboard",
@@ -520,7 +520,7 @@ class AppRoutesTestCase(unittest.TestCase):
             },
             follow_redirects=True,
         )
-        self.assertIn(b"bloqueado pela barbearia", tentativa.data.lower())
+        self.assertIn(b"bloqueado pelo espa\xc3\xa7o", tentativa.data.lower())
 
     def test_admin_can_edit_barber_workday(self):
         self.client.post(
@@ -550,7 +550,7 @@ class AppRoutesTestCase(unittest.TestCase):
         )
 
         self.assertEqual(resposta.status_code, 200)
-        self.assertIn("Barbeiro atualizado.".encode("utf-8"), resposta.data)
+        self.assertIn("Profissional atualizado.".encode("utf-8"), resposta.data)
 
         self.client.get("/logout", follow_redirects=True)
         self.client.post(
@@ -604,7 +604,7 @@ class AppRoutesTestCase(unittest.TestCase):
         )
 
         self.assertEqual(resposta.status_code, 200)
-        self.assertIn("Barbeiro atualizado.".encode("utf-8"), resposta.data)
+        self.assertIn("Profissional atualizado.".encode("utf-8"), resposta.data)
 
         self.client.get("/logout", follow_redirects=True)
         self.client.post(
@@ -645,7 +645,7 @@ class AppRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(resposta.status_code, 200)
-        self.assertIn(b"WhatsApp da barbearia atualizado.", resposta.data)
+        self.assertIn(b"WhatsApp do espa\xc3\xa7o atualizado.", resposta.data)
         self.assertIn(b'value="(11) 95555-4444"', resposta.data)
 
         acesso = self.client.post(

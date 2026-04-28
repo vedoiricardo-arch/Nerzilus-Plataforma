@@ -80,10 +80,10 @@ def build_booking_message(appointment):
     return (
         "\u2705 *Novo agendamento confirmado*\n\n"
         "------------------------------\n"
-        f"\U0001F3E2 *Barbearia:* {tenant.nome}\n"
+        f"\U0001F3E2 *Espaço:* {tenant.nome}\n"
         f"\U0001F464 *Cliente:* {client.nome}\n"
         f"\U0001F4F1 *WhatsApp:* {client_phone}\n\n"
-        f"\U0001F488 *Barbeiro:* {barber.nome}\n"
+        f"\U0001F488 *Profissional:* {barber.nome}\n"
         f"\u2702\uFE0F *Servico:* {service.nome}\n"
         f"\U0001F4B3 *Pagamento:* {payment_label}\n\n"
         f"\U0001F4C5 *Data:* {appointment.data_agendamento.strftime('%d/%m/%Y')}\n"

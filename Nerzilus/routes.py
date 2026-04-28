@@ -891,14 +891,14 @@ def dashboard_cliente(tenant):
         working_slot_labels = get_working_slot_labels(tenant.id, form.barbeiro_id.data)
 
     if not form.barbeiro_id.choices:
-        flash("Nenhum barbeiro disponivel.", "error")
+        flash("Nenhum profissional disponivel.", "error")
     elif form.validate_on_submit():
         servico = Service.query.filter_by(id=form.servico_id.data, tenant_id=tenant.id, ativo=True).first()
         if servico is None:
             flash("Servico invalido.", "error")
             return redirect(url_for("main.dashboard_cliente", tenant_slug=tenant.slug))
         if form.hora_agendamento.data.strftime("%H:%M") in blocked_slot_labels:
-            flash("Este horario foi bloqueado pela barbearia.", "error")
+            flash("Este horario foi bloqueado pelo espaço.", "error")
             return redirect(url_for("main.dashboard_cliente", tenant_slug=tenant.slug))
         if form.hora_agendamento.data.strftime("%H:%M") not in working_slot_labels:
             flash("Este horario esta fora do atendimento configurado pelo admin.", "error")
@@ -1190,7 +1190,7 @@ def atualizar_whatsapp_tenant(tenant):
         if admin is not None and tenant.whatsapp:
             admin.telefone = tenant.whatsapp
         database.session.commit()
-        flash("WhatsApp da barbearia atualizado.", "success")
+        flash("WhatsApp do espaço atualizado.", "success")
     else:
         flash("Nao foi possivel atualizar o WhatsApp.", "error")
     return redirect_to_admin_dashboard(tenant)
@@ -1300,9 +1300,9 @@ def criar_barbeiro(tenant):
         )
         database.session.add(barber)
         database.session.commit()
-        flash("Barbeiro criado.", "success")
+        flash("Profissional criado.", "success")
     else:
-        flash("Nao foi possivel criar o barbeiro.", "error")
+        flash("Nao foi possivel criar o profissional.", "error")
     return redirect_to_admin_dashboard(tenant)
 
 
@@ -1391,7 +1391,7 @@ def editar_barbeiro(tenant, barber_id):
         barbeiro.expediente_inicio = form.expediente_inicio.data
         barbeiro.expediente_fim = form.expediente_fim.data
         database.session.commit()
-        flash("Barbeiro atualizado.", "success")
+        flash("Profissional atualizado.", "success")
     else:
         flash("Nao foi possivel atualizar.", "error")
     return redirect_to_admin_dashboard(tenant)
@@ -1410,7 +1410,7 @@ def excluir_barbeiro(tenant, barber_id):
         BarberUnavailableSlot.query.filter_by(tenant_id=tenant.id, barbeiro_id=barbeiro.id).delete()
         database.session.delete(barbeiro)
     database.session.commit()
-    flash("Barbeiro removido da agenda.", "success")
+    flash("Profissional removido da agenda.", "success")
     return redirect_to_admin_dashboard(tenant)
 
 

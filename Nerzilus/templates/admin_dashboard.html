@@ -15,9 +15,9 @@
         <button type="button" class="admin-nav-button{% if active_admin_section == 'painel' %} is-active{% endif %}" data-admin-nav-target="painel">Painel do adm</button>
         <button type="button" class="admin-nav-button{% if active_admin_section == 'agenda' %} is-active{% endif %}" data-admin-nav-target="agenda">Agenda</button>
         <button type="button" class="admin-nav-button{% if active_admin_section == 'faturamentos' %} is-active{% endif %}" data-admin-nav-target="faturamentos">Faturamentos</button>
-        <button type="button" class="admin-nav-button{% if active_admin_section == 'barbeiros' %} is-active{% endif %}" data-admin-nav-target="barbeiros">Barbeiros ativos</button>
+        <button type="button" class="admin-nav-button{% if active_admin_section == 'barbeiros' %} is-active{% endif %}" data-admin-nav-target="barbeiros">Profissionais ativos</button>
         <button type="button" class="admin-nav-button{% if active_admin_section == 'servicos' %} is-active{% endif %}" data-admin-nav-target="servicos">Servicos</button>
-        <button type="button" class="admin-nav-button{% if active_admin_section == 'novo-barbeiro' %} is-active{% endif %}" data-admin-nav-target="novo-barbeiro">Novo barbeiro</button>
+        <button type="button" class="admin-nav-button{% if active_admin_section == 'novo-barbeiro' %} is-active{% endif %}" data-admin-nav-target="novo-barbeiro">Novo profissional</button>
         <button type="button" class="admin-nav-button{% if active_admin_section == 'novo-servico' %} is-active{% endif %}" data-admin-nav-target="novo-servico">Novo servico</button>
       </nav>
 
@@ -45,9 +45,9 @@
             <button type="button" class="admin-nav-button{% if active_admin_section == 'painel' %} is-active{% endif %}" data-admin-nav-target="painel">Painel</button>
             <button type="button" class="admin-nav-button{% if active_admin_section == 'agenda' %} is-active{% endif %}" data-admin-nav-target="agenda">Agenda</button>
             <button type="button" class="admin-nav-button{% if active_admin_section == 'faturamentos' %} is-active{% endif %}" data-admin-nav-target="faturamentos">Faturamentos</button>
-            <button type="button" class="admin-nav-button{% if active_admin_section == 'barbeiros' %} is-active{% endif %}" data-admin-nav-target="barbeiros">Barbeiros</button>
+            <button type="button" class="admin-nav-button{% if active_admin_section == 'barbeiros' %} is-active{% endif %}" data-admin-nav-target="barbeiros">Profissionais</button>
             <button type="button" class="admin-nav-button{% if active_admin_section == 'servicos' %} is-active{% endif %}" data-admin-nav-target="servicos">Servicos</button>
-            <button type="button" class="admin-nav-button{% if active_admin_section == 'novo-barbeiro' %} is-active{% endif %}" data-admin-nav-target="novo-barbeiro">Novo barbeiro</button>
+            <button type="button" class="admin-nav-button{% if active_admin_section == 'novo-barbeiro' %} is-active{% endif %}" data-admin-nav-target="novo-barbeiro">Novo profissional</button>
             <button type="button" class="admin-nav-button{% if active_admin_section == 'novo-servico' %} is-active{% endif %}" data-admin-nav-target="novo-servico">Novo servico</button>
           </nav>
           <div class="admin-mobile-drawer-actions">
@@ -123,7 +123,7 @@
             </div>
             <form method="GET" action="{{ url_for('main.admin_dashboard', tenant_slug=tenant.slug) }}" class="agenda-filter">
               <input type="hidden" name="section" value="agenda" />
-              <label for="agenda-barber">Barbeiro</label>
+              <label for="agenda-barber">Profissional</label>
               <select id="agenda-barber" name="barbeiro_id" class="input">
                 {% for barbeiro in barbeiros %}
                   <option value="{{ barbeiro.id }}" {% if selected_barber_id == barbeiro.id %}selected{% endif %}>{{ barbeiro.nome }}</option>
@@ -326,7 +326,7 @@
                 </div>
                 <div class="faturamento-meta">
                   <span><strong>Cliente:</strong> {{ faturamento.cliente_nome }}</span>
-                  <span><strong>Barbeiro:</strong> {{ faturamento.barbeiro_nome }}</span>
+                  <span><strong>Profissional:</strong> {{ faturamento.barbeiro_nome }}</span>
                   <span><strong>Servico:</strong> {{ faturamento.servico_nome }}</span>
                   <span><strong>Pagamento:</strong> {{ "Pix pelo app" if faturamento.forma_pagamento == "pix" else "Pagar no local" }}</span>
                 </div>
@@ -340,7 +340,7 @@
 
       <section class="admin-section{% if active_admin_section == 'barbeiros' %} is-active{% endif %}" data-admin-section="barbeiros">
         <section class="panel compact-panel">
-          <p class="eyebrow">Barbeiros ativos</p>
+          <p class="eyebrow">Profissionais ativos</p>
           <div class="list-stack">
             {% for barbeiro in barbeiros %}
               <div class="list-item">
@@ -367,7 +367,7 @@
                   </div>
               </div>
             {% else %}
-              <p class="muted">Sem barbeiros.</p>
+              <p class="muted">Sem profissionais.</p>
             {% endfor %}
           </div>
         </section>
@@ -405,12 +405,12 @@
 
       <section class="admin-section{% if active_admin_section == 'novo-barbeiro' %} is-active{% endif %}" data-admin-section="novo-barbeiro">
         <section class="panel compact-panel">
-          <p class="eyebrow">Novo barbeiro</p>
+          <p class="eyebrow">Novo profissional</p>
           <form method="POST" action="{{ url_for('main.criar_barbeiro', tenant_slug=tenant.slug) }}" class="form-stack compact-top">
             {{ barbeiro_form.csrf_token }}
             <div class="field">
               {{ barbeiro_form.nome.label }}
-              {{ barbeiro_form.nome(class="input", placeholder="Nome do barbeiro") }}
+              {{ barbeiro_form.nome(class="input", placeholder="Nome do profissional") }}
             </div>
             <div class="field">
               {{ barbeiro_form.especialidade.label }}
@@ -465,7 +465,7 @@
 
       <aside class="admin-floating-whatsapp">
         <details class="admin-whatsapp-details admin-whatsapp-fab-details">
-          <summary class="admin-whatsapp-fab-toggle" aria-label="Editar WhatsApp da barbearia">
+          <summary class="admin-whatsapp-fab-toggle" aria-label="Editar WhatsApp do espaço">
             <span class="whatsapp-icon" aria-hidden="true">
               <svg viewBox="0 0 32 32" focusable="false">
                 <path fill="currentColor" d="M19.11 17.34c-.27-.14-1.58-.78-1.82-.87-.24-.09-.41-.14-.58.14-.17.27-.67.87-.82 1.05-.15.18-.31.2-.58.07-.27-.14-1.15-.42-2.19-1.35-.81-.72-1.36-1.6-1.52-1.87-.16-.27-.02-.42.12-.56.13-.13.27-.31.41-.47.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.47-.07-.14-.58-1.41-.8-1.94-.21-.5-.43-.43-.58-.44h-.5c-.18 0-.47.07-.72.34-.25.27-.95.93-.95 2.28s.97 2.66 1.11 2.85c.14.18 1.91 2.91 4.63 4.08.65.28 1.16.45 1.56.57.66.21 1.27.18 1.75.11.53-.08 1.58-.65 1.8-1.28.22-.63.22-1.17.15-1.28-.07-.11-.24-.18-.51-.31Z"/>
@@ -476,7 +476,7 @@
           <div class="admin-whatsapp-fab-panel">
             <form method="POST" action="{{ url_for('main.atualizar_whatsapp_tenant', tenant_slug=tenant.slug) }}" class="admin-whatsapp-form">
               {{ tenant_whatsapp_form.hidden_tag() }}
-              <label for="{{ tenant_whatsapp_form.whatsapp.id }}" class="mini-label admin-whatsapp-label">WhatsApp da barbearia</label>
+              <label for="{{ tenant_whatsapp_form.whatsapp.id }}" class="mini-label admin-whatsapp-label">WhatsApp do espaço</label>
               <div class="admin-whatsapp-inline">
                 {{ tenant_whatsapp_form.whatsapp(class="input admin-whatsapp-input", placeholder="+55 (11) 99999-9999", autocomplete="tel", inputmode="numeric") }}
                 <button type="submit" class="button button-secondary slim-button">Salvar</button>

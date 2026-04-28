@@ -70,7 +70,7 @@ class PlatformSignupForm(FlaskForm):
     email = StringField("Email do admin", validators=[DataRequired(), Email(), Length(max=255)])
     username = StringField("Usuario do admin", validators=[DataRequired(), Length(min=3, max=80)])
     senha = PasswordField("Senha do admin", validators=[DataRequired(), Length(min=4, max=120)])
-    whatsapp = TelField("WhatsApp", validators=[Length(max=30)])
+    whatsapp = TelField("WhatsApp do espaço", validators=[Length(max=30)])
     cpf_cnpj = StringField("CPF ou CNPJ", validators=[Length(max=20)])
     botao_confirmacao = SubmitField("Criar conta")
 
@@ -135,7 +135,7 @@ class ServiceForm(FlaskForm):
 
 
 class AppointmentForm(FlaskForm):
-    barbeiro_id = SelectField("Barbeiro", coerce=int, validators=[DataRequired()])
+    barbeiro_id = SelectField("Profissional", coerce=int, validators=[DataRequired()])
     servico_id = RadioField("Servico", coerce=int, choices=[], validators=[DataRequired()])
     forma_pagamento = RadioField("Pagamento", choices=PAYMENT_CHOICES, validators=[DataRequired()], default="local")
     data_agendamento = DateField("Data", format="%Y-%m-%d", validators=[DataRequired()])
@@ -160,7 +160,7 @@ class SlotAvailabilityForm(FlaskForm):
 
 
 class TenantWhatsAppForm(FlaskForm):
-    whatsapp = TelField("WhatsApp da barbearia", validators=[Length(max=30)])
+    whatsapp = TelField("WhatsApp do espaço", validators=[Length(max=30)])
     botao_confirmacao = SubmitField("Salvar WhatsApp")
 
     def validate_whatsapp(self, field):

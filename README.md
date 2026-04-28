@@ -11,7 +11,7 @@ Plataforma SaaS multi-tenant para barbearias e saloes, baseada em Flask, Postgre
 - Pix recorrente via gateway
 - Webhook Asaas para ativacao e resiliencia de billing
 - Painel interno de assinatura
-- Painel admin, agenda, clientes, barbeiros e servicos
+- Painel admin, agenda, clientes, profissionais e servicos
 - Controle de acesso por status da assinatura
 - Healthcheck para deploy
 
