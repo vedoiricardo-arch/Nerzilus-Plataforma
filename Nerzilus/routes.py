@@ -125,6 +125,14 @@ def tenant_hero_image_url(tenant):
     return DEFAULT_HERO_IMAGE_URL
 
 
+def tenant_logo_image_url(tenant):
+    if tenant.logo_image_data:
+        return url_for("main.logo_image_content", tenant_slug=tenant.slug)
+    if tenant.logo_image:
+        return url_for("static", filename=f"fotos_posts/{tenant.logo_image}")
+    return None
+
+
 def build_appointment_form(tenant_id):
     form = AppointmentForm()
     barbeiros = Barber.query.filter_by(tenant_id=tenant_id, ativo=True).order_by(Barber.nome.asc()).all()
@@ -955,6 +963,7 @@ def dashboard_cliente(tenant):
             selected_time_value,
         ),
         tenant=tenant,
+        logo_image_url=tenant_logo_image_url(tenant),
         tenant_whatsapp_link=build_whatsapp_link(tenant.whatsapp),
         recent_admin_whatsapp_link=recent_admin_whatsapp_link,
         recent_admin_whatsapp_message=recent_admin_whatsapp_message,
@@ -1124,6 +1133,7 @@ def admin_dashboard(tenant):
         subscription=get_primary_subscription(tenant.id),
         tenant=tenant,
         hero_image_url=tenant_hero_image_url(tenant),
+        logo_image_url=tenant_logo_image_url(tenant),
         tenant_whatsapp_link=build_whatsapp_link(tenant.whatsapp),
         client_booking_url=url_for("main.acesso_cliente", tenant_slug=tenant.slug, _external=True),
     )
@@ -1257,6 +1267,51 @@ def atualizar_imagem_cabecalho(tenant):
     return redirect_to_admin_dashboard(tenant)
 
 
+@main_bp.route("/t/<tenant_slug>/admin/logomarca", methods=["POST"])
+@login_required
+@tenant_member_required
+@admin_required
+@subscription_required
+def atualizar_logomarca_tenant(tenant):
+    image_file = request.files.get("logo_image")
+    if image_file is None or not image_file.filename:
+        flash("Selecione uma imagem para a logomarca.", "error")
+        return redirect_to_admin_dashboard(tenant)
+
+    filename = secure_filename(image_file.filename)
+    extension = Path(filename).suffix.lower()
+    if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+        flash("Formato invalido. Use JPG, PNG ou WEBP.", "error")
+        return redirect_to_admin_dashboard(tenant)
+
+    upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    final_name = f"tenant-{tenant.id}-logo{extension}"
+
+    if tenant.logo_image and tenant.logo_image != final_name:
+        previous_file = upload_dir / tenant.logo_image
+        if previous_file.exists():
+            previous_file.unlink()
+
+    image_bytes = image_file.read()
+    if not image_bytes:
+        flash("Nao foi possivel ler a logomarca enviada.", "error")
+        return redirect_to_admin_dashboard(tenant)
+
+    (upload_dir / final_name).write_bytes(image_bytes)
+    tenant.logo_image = final_name
+    tenant.logo_image_data = image_bytes
+    tenant.logo_image_mimetype = image_file.mimetype or {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    }.get(extension, "application/octet-stream")
+    database.session.commit()
+    flash("Logomarca atualizada.", "success")
+    return redirect_to_admin_dashboard(tenant)
+
+
 @main_bp.route("/t/<tenant_slug>/hero-image")
 def hero_image_content(tenant_slug):
     tenant = get_tenant_or_404(tenant_slug)
@@ -1276,6 +1331,35 @@ def hero_image_content(tenant_slug):
                 mimetype=tenant.hero_image_mimetype or "application/octet-stream",
                 max_age=86400,
             )
+
+    return Response(status=404)
+
+
+@main_bp.route("/t/<tenant_slug>/logo-image")
+def logo_image_content(tenant_slug):
+    tenant = get_tenant_or_404(tenant_slug)
+    if tenant.logo_image_data:
+        response = send_file(
+            BytesIO(tenant.logo_image_data),
+            mimetype=tenant.logo_image_mimetype or "application/octet-stream",
+            download_name=tenant.logo_image or f"tenant-{tenant.id}-logo",
+            max_age=0,
+        )
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        return response
+
+    if tenant.logo_image:
+        legacy_path = Path(current_app.config["UPLOAD_FOLDER"]) / tenant.logo_image
+        if legacy_path.exists():
+            response = send_file(
+                legacy_path,
+                mimetype=tenant.logo_image_mimetype or "application/octet-stream",
+                max_age=0,
+            )
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            return response
 
     return Response(status=404)
 

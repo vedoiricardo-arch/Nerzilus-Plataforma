@@ -219,6 +219,15 @@ def ensure_schema_updates():
     if "hero_image_mimetype" not in tenant_columns:
         with database.engine.begin() as connection:
             connection.execute(text("ALTER TABLE tenant ADD COLUMN hero_image_mimetype VARCHAR(120)"))
+    if "logo_image" not in tenant_columns:
+        with database.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE tenant ADD COLUMN logo_image VARCHAR(255)"))
+    if "logo_image_data" not in tenant_columns:
+        with database.engine.begin() as connection:
+            connection.execute(text(f"ALTER TABLE tenant ADD COLUMN logo_image_data {binary_type}"))
+    if "logo_image_mimetype" not in tenant_columns:
+        with database.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE tenant ADD COLUMN logo_image_mimetype VARCHAR(120)"))
     if "stripe_customer_id" not in tenant_columns:
         with database.engine.begin() as connection:
             connection.execute(text("ALTER TABLE tenant ADD COLUMN stripe_customer_id VARCHAR(120)"))

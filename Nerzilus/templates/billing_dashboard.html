@@ -4,9 +4,13 @@
 
 {% block content %}
   <section class="panel billing-hero">
-    <p class="eyebrow">Billing</p>
-    <h1 class="section-title">Painel de assinatura</h1>
-    <p class="subtitle">Todo status vem do webhook do Asaas. O painel mostra plano, vencimento, link de cobranca e os dados do Pix quando houver.</p>
+    <div class="billing-hero-head">
+      <div>
+        <p class="eyebrow">Assinatura</p>
+        <h1 class="section-title">Painel de assinatura</h1>
+      </div>
+      <a href="{{ url_for('main.admin_dashboard', tenant_slug=tenant.slug) }}" class="button button-primary billing-trial-cta">Comecar teste gratis de 7 dias</a>
+    </div>
     <div class="billing-summary-strip">
       <div class="mini-card">
         <span class="mini-label">Plano</span>
@@ -14,7 +18,13 @@
       </div>
       <div class="mini-card">
         <span class="mini-label">Status</span>
-        <strong>{{ subscription.status|upper if subscription else 'INATIVO' }}</strong>
+        <strong>
+          {% if subscription %}
+            {% if subscription.status == 'active' %}ATIVO{% elif subscription.status == 'trialing' %}TESTE{% elif subscription.status == 'pending' %}PENDENTE{% elif subscription.status == 'canceled' %}CANCELADO{% else %}{{ subscription.status|upper }}{% endif %}
+          {% else %}
+            INATIVO
+          {% endif %}
+        </strong>
       </div>
       <div class="mini-card">
         <span class="mini-label">Proxima cobranca</span>
@@ -31,13 +41,33 @@
     <article class="panel compact-panel">
       <p class="eyebrow">Gerenciamento</p>
       <h2 class="section-title">Assinar ou trocar ciclo</h2>
-      <p class="subtitle">No cartao, o checkout cria a recorrencia no Asaas. No Pix, o sistema gera uma cobranca imediata com QR Code e copia e cola.</p>
+      {% set monthly_option = plan_catalog.get('monthly') %}
+      {% if monthly_option %}
+        {% set monthly_promo_amount = monthly_option.amount_brl / 2 %}
+        <section class="billing-promo-card" aria-label="Promocao do primeiro mes">
+          <div class="billing-promo-badge">50% OFF</div>
+          <div class="billing-promo-copy">
+            <p class="eyebrow">Promocao por tempo limitado</p>
+            <strong>Primeiro mes do plano mensal por R$ {{ '%.2f'|format(monthly_promo_amount)|replace('.', ',') }}</strong>
+            <span>Depois do primeiro mes, o plano mensal segue em R$ {{ '%.2f'|format(monthly_option.amount_brl)|replace('.', ',') }}.</span>
+          </div>
+        </section>
+      {% endif %}
 
       <div class="form-stack compact-top">
         {% for interval, option in plan_catalog.items() %}
           <div class="list-item">
             <strong>{{ option.name }} {{ 'Mensal' if interval == 'monthly' else 'Anual' }}</strong>
-            <span>R$ {{ '%.2f'|format(option.amount_brl)|replace('.', ',') }}</span>
+            {% if interval == 'monthly' %}
+              {% set promo_amount = option.amount_brl / 2 %}
+              <span class="billing-plan-promo-price">
+                <s>R$ {{ '%.2f'|format(option.amount_brl)|replace('.', ',') }}</s>
+                <strong>R$ {{ '%.2f'|format(promo_amount)|replace('.', ',') }}</strong>
+                <small>no primeiro mes</small>
+              </span>
+            {% else %}
+              <span>R$ {{ '%.2f'|format(option.amount_brl)|replace('.', ',') }}</span>
+            {% endif %}
             <form method="POST" action="{{ url_for('main.create_checkout_session_route') }}" class="form-stack">
               {{ checkout_forms[(interval, 'PIX')].hidden_tag() }}
               {{ checkout_forms[(interval, 'PIX')].billing_interval(value=interval) }}

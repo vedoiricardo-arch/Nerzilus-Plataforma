@@ -82,9 +82,9 @@
 
 :root[data-theme="pink"] {
   --bg: #fff1f5;
-  --panel: rgba(255, 249, 252, 0.97);
-  --soft: #fff6f9;
-  --soft-2: #f4dde6;
+  --panel: rgba(255, 230, 240, 0.97);
+  --soft: #ffeaf2;
+  --soft-2: #f4cfdd;
   --text: #351826;
   --muted: #7d5b69;
   --accent: #bc5d82;
@@ -93,17 +93,17 @@
   --danger: #b94f5d;
   --line: rgba(188, 93, 130, 0.22);
   --white-line: rgba(53, 24, 38, 0.08);
-  --bg-top: #fff5f8;
-  --bg-bottom: #f3e2e9;
+  --bg-top: #ffe9f1;
+  --bg-bottom: #f3cfdd;
   --stripe-a: rgba(188, 93, 130, 0.045);
   --stripe-b: rgba(188, 93, 130, 0.025);
-  --input-bg: rgba(255, 249, 251, 0.985);
+  --input-bg: rgba(255, 235, 243, 0.985);
   --input-placeholder: rgba(125, 91, 105, 0.74);
-  --secondary-bg: rgba(254, 243, 248, 0.98);
+  --secondary-bg: rgba(255, 228, 239, 0.98);
   --secondary-text: #351826;
-  --surface-strong: rgba(255, 248, 251, 0.97);
-  --surface-soft: rgba(97, 45, 67, 0.032);
-  --surface-panel: rgba(255, 248, 251, 0.9);
+  --surface-strong: rgba(255, 232, 241, 0.97);
+  --surface-soft: rgba(188, 93, 130, 0.075);
+  --surface-panel: rgba(255, 226, 238, 0.9);
   --hero-stage: #ffe8f0;
   --hero-image-backdrop: #ffd7e5;
   --button-primary-text: #2a1020;
@@ -116,7 +116,7 @@
   --hero-overlay-soft: rgba(82, 35, 57, 0.15);
   --hero-overlay-end: rgba(82, 35, 57, 0.08);
   --hero-foreground: #fff8fb;
-  --summary-card-bg: rgba(255, 249, 252, 0.95);
+  --summary-card-bg: rgba(255, 232, 241, 0.96);
   --summary-card-text: #4b2436;
   --summary-card-muted: #7a5867;
 }
@@ -874,6 +874,106 @@ h2.section-title {
   width: 100%;
 }
 
+.admin-business-card {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-height: 110px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  overflow: hidden;
+}
+
+.admin-logo-upload-form {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.admin-logo-add-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 54%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent),
+    color-mix(in srgb, var(--surface-strong) 82%, transparent);
+  color: var(--accent-strong);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 140ms ease, transform 140ms ease, background 140ms ease;
+}
+
+.admin-logo-add-button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 78%, transparent);
+}
+
+.admin-logo-add-button input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.admin-logo-add-button span {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.admin-logo-preview {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 92px;
+  height: 92px;
+  max-width: 92px;
+  max-height: 92px;
+  aspect-ratio: 1;
+  border-radius: 18px;
+  border: 1px solid var(--white-line);
+  background: color-mix(in srgb, var(--surface-strong) 82%, transparent);
+  color: var(--accent-strong);
+  overflow: hidden;
+}
+
+.admin-logo-preview img {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.admin-logo-preview span {
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.admin-business-name {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--text);
+}
+
+.admin-business-name strong {
+  color: var(--text);
+  font-size: clamp(1rem, 1.8vw, 1.28rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
 .admin-brand-title {
   font-size: clamp(2rem, 6vw, 4rem);
   letter-spacing: 0.08em;
@@ -1457,6 +1557,66 @@ h2.section-title {
     var(--panel);
 }
 
+.client-business-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 72%),
+    var(--surface-strong);
+  overflow: hidden;
+}
+
+.client-logo-preview {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 92px;
+  height: 92px;
+  max-width: 92px;
+  max-height: 92px;
+  aspect-ratio: 1;
+  border-radius: 18px;
+  border: 1px solid var(--white-line);
+  background: color-mix(in srgb, var(--surface-soft) 80%, transparent);
+  color: var(--accent-strong);
+  overflow: hidden;
+}
+
+.client-logo-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.client-logo-preview span {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.client-business-name {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.client-business-name strong {
+  color: var(--text);
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
 .booking-wizard {
   display: grid;
   gap: 18px;
@@ -1727,6 +1887,29 @@ h2.section-title {
     padding-top: 0;
   }
 
+  .admin-business-card {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .admin-logo-add-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+
+  .admin-logo-preview {
+    width: 80px;
+    height: 80px;
+    max-width: 80px;
+    max-height: 80px;
+    border-radius: 16px;
+  }
+
+  .admin-business-name strong {
+    font-size: 1rem;
+  }
+
   .admin-summary-card {
     min-height: auto;
     padding: 16px;
@@ -1810,6 +1993,26 @@ h2.section-title {
 
   .booking-shell > .top-row .subtitle {
     font-size: 0.86rem;
+  }
+
+  .client-business-card {
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .client-logo-preview {
+    width: 80px;
+    height: 80px;
+    max-width: 80px;
+    max-height: 80px;
+    border-radius: 16px;
+  }
+
+  .client-business-name strong {
+    font-size: 1.15rem;
   }
 
   .agenda-day-grid {
@@ -2077,6 +2280,19 @@ h2.section-title {
   gap: 14px;
 }
 
+.billing-hero-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.billing-trial-cta {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
 .billing-summary-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2088,6 +2304,75 @@ h2.section-title {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-top: 14px;
+}
+
+.billing-promo-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  background:
+    radial-gradient(circle at 8% 18%, color-mix(in srgb, var(--accent-strong) 32%, transparent), transparent 32%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 24%, transparent), color-mix(in srgb, var(--surface-strong) 94%, transparent));
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24), 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+  overflow: hidden;
+}
+
+.billing-promo-badge {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  min-height: 76px;
+  padding: 10px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent));
+  color: var(--button-primary-text);
+  font-size: 1.28rem;
+  font-weight: 900;
+  line-height: 0.95;
+  text-align: center;
+}
+
+.billing-promo-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.billing-promo-copy strong {
+  color: var(--text);
+  font-size: clamp(1.18rem, 2.8vw, 1.75rem);
+  line-height: 1.04;
+  overflow-wrap: anywhere;
+}
+
+.billing-promo-copy span {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.billing-plan-promo-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.billing-plan-promo-price s {
+  color: var(--muted);
+}
+
+.billing-plan-promo-price strong {
+  color: var(--accent-strong);
+  font-size: 1.22rem;
+}
+
+.billing-plan-promo-price small {
+  color: var(--muted);
 }
 
 .billing-plan-card {
@@ -2146,5 +2431,35 @@ h2.section-title {
   .billing-summary-strip,
   .billing-grid {
     grid-template-columns: 1fr;
+  }
+
+  .billing-hero-head {
+    display: grid;
+    gap: 12px;
+  }
+
+  .billing-trial-cta {
+    width: 100%;
+    white-space: normal;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .billing-promo-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .billing-promo-badge {
+    width: fit-content;
+    min-height: 0;
+    padding: 8px 12px;
+    border-radius: 14px;
+    font-size: 1rem;
+  }
+
+  .billing-plan-promo-price {
+    gap: 6px;
   }
 }

@@ -14,6 +14,8 @@ from Nerzilus.models import PaymentEventLog, Subscription, Tenant, UsageRecord, 
 
 PLAN_KEY = "acesso_liberado"
 TRIAL_DAYS = 7
+FIRST_MONTH_PROMO_DISCOUNT_PERCENT = Decimal("50")
+FIRST_MONTH_PROMO_INTERVAL = "monthly"
 
 
 class BillingConfigurationError(RuntimeError):
@@ -91,6 +93,44 @@ def get_plan_catalog():
             billing_interval="yearly",
         ),
     }
+
+
+def get_first_month_promo_amount(option):
+    return (option.amount_brl * (Decimal("100") - FIRST_MONTH_PROMO_DISCOUNT_PERCENT)) / Decimal("100")
+
+
+def first_month_promo_available(tenant_id, billing_interval):
+    if billing_interval != FIRST_MONTH_PROMO_INTERVAL:
+        return False
+    subscription = get_primary_subscription(tenant_id)
+    if subscription and (
+        subscription.last_payment_id
+        or subscription.asaas_subscription_id
+        or subscription.status == "active"
+    ):
+        return False
+    return not PaymentEventLog.query.filter_by(
+        tenant_id=tenant_id,
+        event_type="asaas.first_month_promo.created",
+        status="processed",
+    ).first()
+
+
+def log_first_month_promo_created(tenant, user, *, billing_interval, billing_method, amount_brl, full_amount_brl, external_event_id=None):
+    log_payment_event(
+        "asaas.first_month_promo.created",
+        tenant_id=tenant.id,
+        user_id=user.id,
+        external_event_id=external_event_id,
+        payload={
+            "billing_interval": billing_interval,
+            "billing_method": billing_method,
+            "amount_brl": str(amount_brl),
+            "full_amount_brl": str(full_amount_brl),
+            "discount_percent": str(FIRST_MONTH_PROMO_DISCOUNT_PERCENT),
+        },
+        status="processed",
+    )
 
 
 def get_primary_subscription(tenant_id):
@@ -388,10 +428,12 @@ def create_pix_payment(user, tenant, billing_interval):
         raise BillingConfigurationError("Plano selecionado nao existe.")
 
     customer_id = ensure_asaas_customer(user, tenant)
+    promo_applied = first_month_promo_available(tenant.id, billing_interval)
+    charge_amount = get_first_month_promo_amount(option) if promo_applied else option.amount_brl
     payment_payload = {
         "customer": customer_id,
         "billingType": "PIX",
-        "value": float(option.amount_brl),
+        "value": float(charge_amount),
         "dueDate": date.today().isoformat(),
         "description": f"{option.name} - {tenant.nome}",
         "externalReference": f"tenant:{tenant.id}:user:{user.id}",
@@ -423,6 +465,17 @@ def create_pix_payment(user, tenant, billing_interval):
         subscription.current_period_end = subscription.next_due_date
     database.session.commit()
 
+    if promo_applied:
+        log_first_month_promo_created(
+            tenant,
+            user,
+            billing_interval=billing_interval,
+            billing_method="PIX",
+            amount_brl=charge_amount,
+            full_amount_brl=option.amount_brl,
+            external_event_id=f"promo:{payment.get('id')}",
+        )
+
     log_payment_event(
         "asaas.pix.payment.created",
         tenant_id=tenant.id,
@@ -432,6 +485,8 @@ def create_pix_payment(user, tenant, billing_interval):
             "payment_id": payment.get("id"),
             "billing_interval": billing_interval,
             "billing_method": "PIX",
+            "amount_brl": str(charge_amount),
+            "first_month_promo_applied": promo_applied,
         },
         status="processed",
     )
@@ -453,6 +508,7 @@ def create_checkout_session(user, tenant, billing_interval, billing_method):
 
     customer_id = ensure_asaas_customer(user, tenant)
     next_due_date = (utcnow() + timedelta(days=TRIAL_DAYS)).date().isoformat()
+    promo_applied = first_month_promo_available(tenant.id, billing_interval)
     subscription_payload = {
         "customer": customer_id,
         "billingType": billing_method,
@@ -463,6 +519,13 @@ def create_checkout_session(user, tenant, billing_interval, billing_method):
         "externalReference": f"tenant:{tenant.id}:user:{user.id}",
         "endDate": None,
     }
+    if promo_applied:
+        subscription_payload["discount"] = {
+            "value": float(FIRST_MONTH_PROMO_DISCOUNT_PERCENT),
+            "type": "PERCENTAGE",
+            "limitDate": next_due_date,
+            "dueDateLimitDays": 0,
+        }
     asaas_subscription = asaas_request("POST", "/subscriptions", payload=subscription_payload)
 
     payment_payload = get_latest_payment_for_subscription(asaas_subscription.get("id"))
@@ -475,6 +538,17 @@ def create_checkout_session(user, tenant, billing_interval, billing_method):
         payment_payload=payment_payload,
     )
 
+    if promo_applied:
+        log_first_month_promo_created(
+            tenant,
+            user,
+            billing_interval=billing_interval,
+            billing_method=billing_method,
+            amount_brl=get_first_month_promo_amount(option),
+            full_amount_brl=option.amount_brl,
+            external_event_id=f"promo:{asaas_subscription.get('id')}",
+        )
+
     log_payment_event(
         "asaas.subscription.created",
         tenant_id=tenant.id,
@@ -483,6 +557,7 @@ def create_checkout_session(user, tenant, billing_interval, billing_method):
             "asaas_subscription_id": asaas_subscription.get("id"),
             "billing_interval": billing_interval,
             "billing_method": billing_method,
+            "first_month_promo_applied": promo_applied,
         },
         status="processed",
     )

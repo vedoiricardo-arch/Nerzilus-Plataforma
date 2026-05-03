@@ -8,7 +8,6 @@
       <div>
         <p class="eyebrow">Cliente</p>
         <h1>Ola, {{ current_user.nome }}</h1>
-        <p class="subtitle">{{ tenant.nome }}</p>
       </div>
       <div class="client-top-actions">
         {% if tenant_whatsapp_link %}
@@ -17,6 +16,19 @@
         <a href="{{ url_for('main.logout') }}" class="link-button">Sair</a>
       </div>
     </div>
+
+    <section class="client-business-card" aria-label="Informacoes do negocio">
+      <div class="client-logo-preview" aria-hidden="{% if logo_image_url %}false{% else %}true{% endif %}">
+        {% if logo_image_url %}
+          <img src="{{ logo_image_url }}" alt="Logomarca de {{ tenant.nome }}" loading="lazy" />
+        {% else %}
+          <span>{{ tenant.nome[:2]|upper }}</span>
+        {% endif %}
+      </div>
+      <div class="client-business-name">
+        <strong>{{ tenant.nome }}</strong>
+      </div>
+    </section>
 
     {% if recent_admin_whatsapp_link %}
       <div class="booking-admin-alert">

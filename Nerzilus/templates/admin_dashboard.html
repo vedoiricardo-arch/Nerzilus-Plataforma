@@ -59,6 +59,26 @@
       </div>
 
       <section class="admin-section{% if active_admin_section == 'painel' %} is-active{% endif %}" data-admin-section="painel">
+        <section class="admin-business-card panel" aria-label="Identidade do negocio">
+          <form method="POST" action="{{ url_for('main.atualizar_logomarca_tenant', tenant_slug=tenant.slug) }}" class="admin-logo-upload-form" enctype="multipart/form-data">
+            <label class="admin-logo-add-button" title="Adicionar logomarca" aria-label="Adicionar logomarca">
+              <input id="logo-image" type="file" name="logo_image" accept=".jpg,.jpeg,.png,.webp" onchange="this.form.submit()" style="display: none;" />
+              <span aria-hidden="true">+</span>
+            </label>
+          </form>
+          <div class="admin-logo-preview" aria-hidden="{% if logo_image_url %}false{% else %}true{% endif %}">
+            {% if logo_image_url %}
+              <img src="{{ logo_image_url }}" alt="Logomarca de {{ tenant.nome }}" loading="lazy" />
+            {% else %}
+              <span>{{ tenant.nome[:2]|upper }}</span>
+            {% endif %}
+          </div>
+          <div class="admin-business-name">
+            <p class="eyebrow">Logomarca</p>
+            <strong>{{ tenant.nome }}</strong>
+          </div>
+        </section>
+
         <section class="admin-hero panel">
           <div class="admin-hero-photo" style="background-image:url('{{ hero_image_url }}');" aria-hidden="true"></div>
 
