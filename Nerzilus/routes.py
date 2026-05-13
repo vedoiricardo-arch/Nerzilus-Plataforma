@@ -23,6 +23,7 @@ from Nerzilus.billing import (
     create_checkout_session,
     ensure_asaas_customer,
     ensure_trial_subscription,
+    get_launch_plan_amount,
     get_owner_user_for_tenant,
     get_plan_catalog,
     get_primary_subscription,
@@ -30,6 +31,7 @@ from Nerzilus.billing import (
     record_usage,
     sync_subscription_from_asaas_event,
     tenant_has_active_access,
+    user_has_permanent_admin_access,
 )
 from Nerzilus.forms import (
     AdminLoginForm,
@@ -100,6 +102,8 @@ def tenant_member_required(view):
 def subscription_required(view):
     @wraps(view)
     def wrapped_view(tenant, *args, **kwargs):
+        if current_user.is_authenticated and current_user.tenant_id == tenant.id and user_has_permanent_admin_access(current_user):
+            return view(tenant, *args, **kwargs)
         if tenant_has_active_access(tenant):
             return view(tenant, *args, **kwargs)
         if current_user.is_authenticated and current_user.is_admin and current_user.tenant_id == tenant.id:
@@ -605,7 +609,7 @@ def login_admin(tenant_slug):
 def dashboard_redirect():
     if current_user.is_admin:
         tenant = current_user.tenant
-        if tenant_has_active_access(tenant):
+        if user_has_permanent_admin_access(current_user) or tenant_has_active_access(tenant):
             return redirect(url_for("main.admin_dashboard", tenant_slug=tenant.slug))
         return redirect(url_for("main.billing_dashboard"))
 
@@ -651,6 +655,7 @@ def plans():
         cancel_form=cancel_form,
         customer_form=customer_form,
         asaas_is_configured=asaas_is_configured(),
+        launch_plan_amount=get_launch_plan_amount,
     )
 
 
@@ -683,6 +688,7 @@ def billing_dashboard():
         cancel_form=cancel_form,
         customer_form=customer_form,
         asaas_is_configured=asaas_is_configured(),
+        launch_plan_amount=get_launch_plan_amount,
     )
 
 
