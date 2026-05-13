@@ -29,9 +29,9 @@ services:
         sync: false
       - key: ASAAS_PIX_KEY
         value: "51993338005"
-      - key: PLAN_ACCESS_LIBERADO_MONTHLY_AMOUNT
+      - key: PLAN_ACCESS_LIBERADO_ACTIVE_MONTHLY_AMOUNT
         value: "49.90"
-      - key: PLAN_ACCESS_LIBERADO_YEARLY_AMOUNT
+      - key: PLAN_ACCESS_LIBERADO_ACTIVE_YEARLY_AMOUNT
         value: "499.90"
       - key: ADMIN_EMAIL
         sync: false

@@ -73,8 +73,8 @@ def asaas_is_configured():
 
 
 def get_plan_catalog():
-    monthly_amount = Decimal(os.getenv("PLAN_ACCESS_LIBERADO_MONTHLY_AMOUNT", "49.90"))
-    yearly_amount = Decimal(os.getenv("PLAN_ACCESS_LIBERADO_YEARLY_AMOUNT", "499.90"))
+    monthly_amount = Decimal(os.getenv("PLAN_ACCESS_LIBERADO_ACTIVE_MONTHLY_AMOUNT", "49.90"))
+    yearly_amount = Decimal(os.getenv("PLAN_ACCESS_LIBERADO_ACTIVE_YEARLY_AMOUNT", "499.90"))
     return {
         "monthly": PlanOption(
             key=PLAN_KEY,
