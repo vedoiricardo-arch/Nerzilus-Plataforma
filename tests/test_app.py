@@ -186,9 +186,10 @@ class AppRoutesTestCase(unittest.TestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertIn("Painel de assinatura".encode("utf-8"), resposta.data)
         self.assertIn("Dados do pagamento".encode("utf-8"), resposta.data)
-        self.assertIn(b"50% OFF", resposta.data)
-        self.assertIn("Primeiro mes do plano mensal".encode("utf-8"), resposta.data)
-        self.assertIn(b"R$ 49,50", resposta.data)
+        self.assertIn(b"Lancamento", resposta.data)
+        self.assertIn("Promocao por tempo limitado".encode("utf-8"), resposta.data)
+        self.assertIn(b"R$ 49,90", resposta.data)
+        self.assertIn(b"R$ 499,90", resposta.data)
         self.assertNotIn(b"Billing", resposta.data)
         self.assertNotIn("No cartao, o checkout cria".encode("utf-8"), resposta.data)
         self.assertIn(b"TESTE", resposta.data)
@@ -230,7 +231,7 @@ class AppRoutesTestCase(unittest.TestCase):
         self.assertEqual(resposta.headers["Location"], "https://sandbox.asaas.com/i/pay_123")
         mocked_checkout.assert_called_once()
 
-    def test_first_month_pix_promo_is_used_only_once(self):
+    def test_monthly_pix_uses_launch_price_for_every_charge(self):
         with self.app.app_context():
             from Nerzilus.billing import create_pix_payment
             from Nerzilus.models import Tenant, User
@@ -257,9 +258,38 @@ class AppRoutesTestCase(unittest.TestCase):
                     create_pix_payment(admin, tenant, "monthly")
                     create_pix_payment(admin, tenant, "monthly")
 
-            self.assertEqual(payment_values, [49.5, 99.0])
+            self.assertEqual(payment_values, [49.9, 49.9])
 
-    def test_first_month_card_subscription_uses_discount_only_once(self):
+    def test_yearly_pix_uses_launch_price_for_every_charge(self):
+        with self.app.app_context():
+            from Nerzilus.billing import create_pix_payment
+            from Nerzilus.models import Tenant, User
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            admin = User.query.filter_by(tenant_id=tenant.id, is_admin=True).first()
+            payment_values = []
+
+            def fake_asaas_request(method, path, payload=None, query=None):
+                del query
+                if method == "POST" and path == "/payments":
+                    payment_values.append(payload["value"])
+                    return {
+                        "id": f"pay_year_{len(payment_values)}",
+                        "invoiceUrl": f"https://sandbox.asaas.com/i/pay_year_{len(payment_values)}",
+                        "dueDate": "2026-05-02",
+                    }
+                if method == "GET" and path.endswith("/pixQrCode"):
+                    return {"payload": "pix-copia-cola", "encodedImage": "qr-code"}
+                raise AssertionError(f"Unexpected Asaas call: {method} {path}")
+
+            with patch("Nerzilus.billing.ensure_asaas_customer", return_value="cus_123"):
+                with patch("Nerzilus.billing.asaas_request", side_effect=fake_asaas_request):
+                    create_pix_payment(admin, tenant, "yearly")
+                    create_pix_payment(admin, tenant, "yearly")
+
+            self.assertEqual(payment_values, [499.9, 499.9])
+
+    def test_card_subscription_uses_launch_price_as_recurring_value(self):
         with self.app.app_context():
             from Nerzilus.billing import create_checkout_session
             from Nerzilus.models import Tenant, User
@@ -288,12 +318,49 @@ class AppRoutesTestCase(unittest.TestCase):
                     create_checkout_session(admin, tenant, "monthly", "CREDIT_CARD")
                     create_checkout_session(admin, tenant, "monthly", "CREDIT_CARD")
 
-            self.assertEqual(subscription_payloads[0]["value"], 99.0)
-            self.assertEqual(subscription_payloads[0]["discount"]["value"], 50.0)
-            self.assertEqual(subscription_payloads[0]["discount"]["type"], "PERCENTAGE")
+            self.assertEqual(subscription_payloads[0]["value"], 49.9)
+            self.assertNotIn("discount", subscription_payloads[0])
             self.assertNotIn("discount", subscription_payloads[1])
 
-    def test_first_month_promo_is_not_applied_after_existing_payment(self):
+    def test_primary_admin_keeps_access_when_subscription_is_inactive(self):
+        self.login_admin()
+        with self.app.app_context():
+            from Nerzilus import database
+            from Nerzilus.models import Subscription, Tenant
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            subscription = Subscription.query.filter_by(tenant_id=tenant.id).first()
+            subscription.status = "canceled"
+            subscription.current_period_end = None
+            subscription.trial_end = None
+            database.session.commit()
+
+        dashboard = self.client.get("/dashboard", follow_redirects=False)
+        self.assertEqual(dashboard.status_code, 302)
+        self.assertIn("/t/nerzilus-studio/admin", dashboard.headers["Location"])
+
+        admin_area = self.client.get("/t/nerzilus-studio/admin", follow_redirects=True)
+        self.assertEqual(admin_area.status_code, 200)
+        self.assertIn("Resumo do negocio".encode("utf-8"), admin_area.data)
+
+    def test_default_sergio_lima_tenant_keeps_client_access_when_subscription_is_inactive(self):
+        with self.app.app_context():
+            from Nerzilus import database
+            from Nerzilus.models import Subscription, Tenant
+
+            tenant = Tenant.query.filter_by(slug="nerzilus-studio").first()
+            subscription = Subscription.query.filter_by(tenant_id=tenant.id).first()
+            subscription.status = "canceled"
+            subscription.current_period_end = None
+            subscription.trial_end = None
+            database.session.commit()
+
+        resposta = self.client.get("/t/nerzilus-studio/cliente")
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn("Sergio Lima Barber e Salao".encode("utf-8"), resposta.data)
+
+    def test_existing_payment_keeps_launch_price_for_new_pix_charge(self):
         with self.app.app_context():
             from Nerzilus import database
             from Nerzilus.billing import create_pix_payment
@@ -324,7 +391,7 @@ class AppRoutesTestCase(unittest.TestCase):
                 with patch("Nerzilus.billing.asaas_request", side_effect=fake_asaas_request):
                     create_pix_payment(admin, tenant, "monthly")
 
-            self.assertEqual(payment_values, [99.0])
+            self.assertEqual(payment_values, [49.9])
 
     @patch("Nerzilus.routes.cancel_subscription_at_period_end")
     def test_billing_cancel_route_requests_subscription_cancellation(self, mocked_cancel):

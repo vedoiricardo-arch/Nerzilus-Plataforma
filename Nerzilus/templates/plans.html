@@ -28,7 +28,11 @@
       <article class="panel billing-plan-card{% if interval == 'monthly' %} is-featured{% endif %}">
         <p class="eyebrow">{{ 'Mensal' if interval == 'monthly' else 'Anual' }}</p>
         <h2 class="section-title">{{ option.name }}</h2>
-        <p class="billing-price">R$ {{ '%.2f'|format(option.amount_brl)|replace('.', ',') }}</p>
+        {% set promo_amount = launch_plan_amount(option) %}
+        <p class="billing-plan-promo-price">
+          <strong>R$ {{ '%.2f'|format(promo_amount)|replace('.', ',') }}</strong>
+          <small>promocao por tempo limitado</small>
+        </p>
         <p class="subtitle">{{ option.description }}</p>
         <ul class="billing-feature-list">
           <li>Acesso completo ao ambiente multi-tenant</li>

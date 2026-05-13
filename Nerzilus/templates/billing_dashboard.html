@@ -42,14 +42,15 @@
       <p class="eyebrow">Gerenciamento</p>
       <h2 class="section-title">Assinar ou trocar ciclo</h2>
       {% set monthly_option = plan_catalog.get('monthly') %}
-      {% if monthly_option %}
-        {% set monthly_promo_amount = monthly_option.amount_brl / 2 %}
+      {% set yearly_option = plan_catalog.get('yearly') %}
+      {% if monthly_option and yearly_option %}
+        {% set monthly_promo_amount = launch_plan_amount(monthly_option) %}
+        {% set yearly_promo_amount = launch_plan_amount(yearly_option) %}
         <section class="billing-promo-card" aria-label="Promocao do primeiro mes">
-          <div class="billing-promo-badge">50% OFF</div>
+          <div class="billing-promo-badge">Lancamento</div>
           <div class="billing-promo-copy">
             <p class="eyebrow">Promocao por tempo limitado</p>
-            <strong>Primeiro mes do plano mensal por R$ {{ '%.2f'|format(monthly_promo_amount)|replace('.', ',') }}</strong>
-            <span>Depois do primeiro mes, o plano mensal segue em R$ {{ '%.2f'|format(monthly_option.amount_brl)|replace('.', ',') }}.</span>
+            <strong>Mensal por R$ {{ '%.2f'|format(monthly_promo_amount)|replace('.', ',') }} ou anual por R$ {{ '%.2f'|format(yearly_promo_amount)|replace('.', ',') }}</strong>
           </div>
         </section>
       {% endif %}
@@ -58,16 +59,11 @@
         {% for interval, option in plan_catalog.items() %}
           <div class="list-item">
             <strong>{{ option.name }} {{ 'Mensal' if interval == 'monthly' else 'Anual' }}</strong>
-            {% if interval == 'monthly' %}
-              {% set promo_amount = option.amount_brl / 2 %}
-              <span class="billing-plan-promo-price">
-                <s>R$ {{ '%.2f'|format(option.amount_brl)|replace('.', ',') }}</s>
-                <strong>R$ {{ '%.2f'|format(promo_amount)|replace('.', ',') }}</strong>
-                <small>no primeiro mes</small>
-              </span>
-            {% else %}
-              <span>R$ {{ '%.2f'|format(option.amount_brl)|replace('.', ',') }}</span>
-            {% endif %}
+            {% set promo_amount = launch_plan_amount(option) %}
+            <span class="billing-plan-promo-price">
+              <strong>R$ {{ '%.2f'|format(promo_amount)|replace('.', ',') }}</strong>
+              <small>promocao por tempo limitado</small>
+            </span>
             <form method="POST" action="{{ url_for('main.create_checkout_session_route') }}" class="form-stack">
               {{ checkout_forms[(interval, 'PIX')].hidden_tag() }}
               {{ checkout_forms[(interval, 'PIX')].billing_interval(value=interval) }}
